@@ -1,0 +1,16 @@
+notes/README.md
+  h_490cfe78535d7b 1-6
+practice/README.md
+  h_490cfe78535d7b 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "770ae5afd645da3fccdac929c4cac31c571ba276",
+  "prompts": {},
+  "humans": {
+    "h_490cfe78535d7b": {
+      "author": "lijinhai255 <47961590+lijinhai255@users.noreply.github.com>"
+    }
+  }
+}
