@@ -1,0 +1,11 @@
+version: "1.0"
+
+services:
+  miaoma-nest-pg:
+    image: postgres:18
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=heyi
+      - POSTGRES_PASSWORD=xiao123
+      - POSTGRES_DB=postgres
