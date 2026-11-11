@@ -1,0 +1,19 @@
+README.md
+  s_778ebd7e19a915::t_87d02aa5d8107a 9-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c5de10bef109311001fe7cc8b828879eca95053d",
+  "prompts": {},
+  "sessions": {
+    "s_778ebd7e19a915": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "56e731bd-521a-4cd2-9b56-928b821c78b5",
+        "model": "claude-haiku-4-5"
+      },
+      "human_author": "lijinhai255 <47961590+lijinhai255@users.noreply.github.com>"
+    }
+  }
+}
