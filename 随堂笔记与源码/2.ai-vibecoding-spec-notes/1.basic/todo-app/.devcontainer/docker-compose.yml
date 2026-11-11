@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+    todo-app-postgresql:
+        image: postgres:16
+        container_name: todo-app-postgresql
+        ports:
+            - '5433:5432'
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_HOST_AUTH_METHOD=trust
+            - POSTGRES_DB=todo_app
+            - TZ=Asia/Shanghai
+        command:
+            - 'postgres'
+            - '-c'
+            - 'timezone=Asia/Shanghai'
+            - '-c'
+            - 'log_timezone=Asia/Shanghai'
+        volumes:
+            - ./postgresql_data:/var/lib/postgresql/data
+
+networks:
+    default:
+        name: todo-app-network
+        driver: bridge

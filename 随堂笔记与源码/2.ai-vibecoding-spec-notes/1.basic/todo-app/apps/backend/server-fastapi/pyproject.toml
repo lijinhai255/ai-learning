@@ -1,0 +1,14 @@
+[project]
+name = "todo-app-server-fastapi"
+version = "1.0.0"
+description = "Todo 应用服务端（FastAPI 版，教学演示，与 NestJS 版 API 对齐）"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "pydantic-settings>=2.6",
+    "PyJWT>=2.9",
+    "bcrypt>=4.2",
+]

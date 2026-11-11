@@ -1,0 +1,13 @@
+:root {
+  --miaoma-color-ink: #18212f;
+  --miaoma-color-muted: #64748b;
+  --miaoma-color-primary: #4454d9;
+  --miaoma-color-surface: #ffffff;
+  --miaoma-color-canvas: #f6f7fb;
+  --miaoma-color-border: #e5e7eb;
+  --miaoma-space-xs: 4px;
+  --miaoma-space-sm: 8px;
+  --miaoma-space-md: 16px;
+  --miaoma-space-lg: 24px;
+  --miaoma-space-xl: 32px;
+}

@@ -1,0 +1,6 @@
+.txt {
+  color: blue
+}
+.item {
+  padding-left: 10px;
+}

@@ -1,0 +1,5 @@
+allowBuilds:
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@langchain/openai@1.7.1'
+  - '@langchain/classic@1.0.56'

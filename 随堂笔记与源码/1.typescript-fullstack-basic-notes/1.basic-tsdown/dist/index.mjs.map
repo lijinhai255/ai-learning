@@ -1,0 +1,1 @@
+{"version":3,"file":"index.mjs","names":[],"sources":["../src/index.ts"],"sourcesContent":["export interface User {\n    name: string;\n}\n\nconsole.log(123)"],"mappings":";AAIA,QAAQ,IAAI,GAAG"}

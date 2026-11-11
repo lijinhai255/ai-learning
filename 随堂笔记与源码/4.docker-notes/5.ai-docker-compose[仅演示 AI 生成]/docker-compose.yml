@@ -1,0 +1,95 @@
+# Docker Compose 一键编排：Node 后端 + Postgres + Redis + Caddy 反代
+# 用法：docker compose up -d --build
+
+services:
+  # ---------- 后端 Node.js ----------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai-backend
+    restart: unless-stopped
+    # 调试用：宿主 3001 -> 容器 3000，可直接 curl 走后端
+    # 正式部署可注释掉，只通过 caddy 反代访问
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      PG_HOST: db
+      PG_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-heyi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-heyi_pwd}
+      POSTGRES_DB: ${POSTGRES_DB:-heyi_app}
+      REDIS_HOST: cache
+      REDIS_PORT: 6379
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  # ---------- PostgreSQL ----------
+  db:
+    image: postgres:16-alpine
+    container_name: ai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-heyi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-heyi_pwd}
+      POSTGRES_DB: ${POSTGRES_DB:-heyi_app}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-heyi} -d ${POSTGRES_DB:-heyi_app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-net
+
+  # ---------- Redis ----------
+  cache:
+    image: redis:7-alpine
+    container_name: ai-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - app-net
+
+  # ---------- Caddy 反代 + 静态托管 ----------
+  caddy:
+    image: caddy:2-alpine
+    container_name: ai-caddy
+    restart: unless-stopped
+    # 宿主 8080 -> 容器 80（Caddyfile 监听 :80）
+    ports:
+      - "8080:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  app-net:
+    driver: bridge

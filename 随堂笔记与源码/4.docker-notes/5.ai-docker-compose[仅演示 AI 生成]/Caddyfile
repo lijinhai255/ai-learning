@@ -1,0 +1,30 @@
+# Caddy 配置
+# 作用：
+# 1. 作为「CDN 边缘节点」静态托管 React 构建产物（/srv）
+# 2. 反向代理 /api/* 和 /health 到后端 Node 服务
+
+# Caddy 容器内默认监听 :80，由 docker-compose 把宿主 8080 映射进来
+:80 {
+    # 启用静态文件服务（file_server 必填，否则 404）
+    root * /srv
+
+    # 启用 gzip 压缩
+    encode gzip
+
+    # API 与健康检查 -> backend:3000（Compose 服务名 + 端口）
+    handle /api/* {
+        reverse_proxy backend:3000
+    }
+    handle /health {
+        reverse_proxy backend:3000
+    }
+
+    # 其它全部走静态文件（React SPA）
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+
+    # 简单日志
+    log
+}

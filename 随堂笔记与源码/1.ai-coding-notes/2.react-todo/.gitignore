@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.turbo/
+.env
+.env.*
+!.env.example
+playwright-report/
+test-results/
+*.log
+*.tsbuildinfo
+target/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.venv/

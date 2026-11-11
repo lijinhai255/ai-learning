@@ -1,0 +1,13 @@
+{
+  "name": "2.base-ssr",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "Heyi",
+  "license": "ISC",
+  "description": ""
+}

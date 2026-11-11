@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LangGraph 流程讲解 · analyze → 并行 fetch → 汇总</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel-2: #1e222d;
+    --border: #2a2f3d;
+    --text: #e6e9f0;
+    --muted: #9aa4b8;
+    --accent: #6ea8fe;
+    --accent-2: #7ee0b8;
+    --warn: #ffcc66;
+    --line: #3a4152;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: .5px; }
+  h2 {
+    font-size: 20px; margin: 44px 0 16px; padding-left: 12px;
+    border-left: 4px solid var(--accent);
+  }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 4px; }
+  .file {
+    display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; color: var(--accent-2); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px;
+    margin-top: 10px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px; margin-top: 18px;
+  }
+  .diagram { overflow-x: auto; background: var(--panel-2); border-radius: 14px; border: 1px solid var(--border); padding: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 6px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; background: var(--panel-2); }
+  tr:last-child td { border-bottom: none; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+    background: #10131a; border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+    color: #cfe3ff;
+  }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .k { color: var(--accent); font-weight: 600; }
+  .g { color: var(--accent-2); font-weight: 600; }
+  .w { color: var(--warn); font-weight: 600; }
+  ul { margin: 8px 0 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  .steps { counter-reset: s; list-style: none; padding-left: 0; }
+  .steps li { position: relative; padding-left: 40px; margin: 14px 0; }
+  .steps li::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; left: 0; top: 0;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #0b0e14; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .note { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>analyze → 并行 fetch → 汇总（Map-Reduce）</h1>
+  <div class="sub">LangGraph.js 动态并行工作流讲解 · 用 <code>Send</code> 把「一次分析 + N 次抓取 + 一次汇总」组织成并行执行</div>
+  <div class="file">src/4.simple-agent/agent2.ts</div>
+
+  <h2>一、整体结构图</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 1100 700" width="100%" height="700" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace, Menlo, monospace">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#64708a" />
+        </marker>
+        <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#233a5e" /><stop offset="1" stop-color="#1b2a44" />
+        </linearGradient>
+        <linearGradient id="gF" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1e4d3c" /><stop offset="1" stop-color="#16362c" />
+        </linearGradient>
+        <linearGradient id="gM" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4a3a1e" /><stop offset="1" stop-color="#332915" />
+        </linearGradient>
+      </defs>
+
+      <!-- START -->
+      <circle cx="550" cy="52" r="30" fill="#1c2433" stroke="#64708a" stroke-width="2" />
+      <text x="550" y="57" text-anchor="middle" fill="#cfe3ff" font-size="13">START</text>
+
+      <!-- START -> analyze -->
+      <line x1="550" y1="82" x2="550" y2="120" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <!-- analyze -->
+      <rect x="430" y="122" width="240" height="76" rx="12" fill="url(#gA)" stroke="#5b8dee" stroke-width="2" />
+      <text x="550" y="152" text-anchor="middle" fill="#dce9ff" font-size="15" font-weight="700">analyze</text>
+      <text x="550" y="175" text-anchor="middle" fill="#9db8e0" font-size="12">LLM 找出 5 个国内可借鉴网站</text>
+
+      <!-- analyze -> bus -->
+      <line x1="550" y1="198" x2="550" y2="228" stroke="#64708a" stroke-width="2" />
+      <text x="700" y="220" text-anchor="middle" fill="#ffcc66" font-size="12">Send × N（动态并行派发）</text>
+
+      <!-- bus -->
+      <line x1="190" y1="228" x2="910" y2="228" stroke="#64708a" stroke-width="2" />
+      <line x1="190" y1="228" x2="190" y2="262" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+      <line x1="550" y1="228" x2="550" y2="262" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+      <line x1="910" y1="228" x2="910" y2="262" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <!-- fetch nodes -->
+      <rect x="95" y="264" width="190" height="78" rx="12" fill="url(#gF)" stroke="#4fca9d" stroke-width="2" />
+      <text x="190" y="295" text-anchor="middle" fill="#d6ffee" font-size="14" font-weight="700">fetchTool #1</text>
+      <text x="190" y="317" text-anchor="middle" fill="#8fd8bd" font-size="11">{ url: urls[0] }</text>
+
+      <rect x="455" y="264" width="190" height="78" rx="12" fill="url(#gF)" stroke="#4fca9d" stroke-width="2" />
+      <text x="550" y="295" text-anchor="middle" fill="#d6ffee" font-size="14" font-weight="700">fetchTool #2</text>
+      <text x="550" y="317" text-anchor="middle" fill="#8fd8bd" font-size="11">{ url: urls[1] }</text>
+
+      <rect x="815" y="264" width="190" height="78" rx="12" fill="url(#gF)" stroke="#4fca9d" stroke-width="2" stroke-dasharray="5 4" />
+      <text x="910" y="295" text-anchor="middle" fill="#d6ffee" font-size="14" font-weight="700">fetchTool #N</text>
+      <text x="910" y="317" text-anchor="middle" fill="#8fd8bd" font-size="11">{ url: urls[N-1] }</text>
+
+      <text x="672" y="309" text-anchor="middle" fill="#9aa4b8" font-size="20">⋯</text>
+      <text x="190" y="362" text-anchor="middle" fill="#6e7a90" font-size="11">同一超步内同时执行</text>
+
+      <!-- fetch -> merge bus -->
+      <line x1="190" y1="342" x2="190" y2="398" stroke="#64708a" stroke-width="2" />
+      <line x1="550" y1="342" x2="550" y2="398" stroke="#64708a" stroke-width="2" />
+      <line x1="910" y1="342" x2="910" y2="398" stroke="#64708a" stroke-width="2" />
+      <line x1="190" y1="398" x2="910" y2="398" stroke="#64708a" stroke-width="2" />
+      <line x1="550" y1="398" x2="550" y2="424" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <text x="720" y="392" text-anchor="middle" fill="#7ee0b8" font-size="12">contents 用 reducer 合并</text>
+
+      <!-- modelNode -->
+      <rect x="410" y="426" width="280" height="80" rx="12" fill="url(#gM)" stroke="#e0b34f" stroke-width="2" />
+      <text x="550" y="458" text-anchor="middle" fill="#fff0cf" font-size="15" font-weight="700">modelNode（汇总）</text>
+      <text x="550" y="481" text-anchor="middle" fill="#dcc48a" font-size="11">等待全部 fetch 完成 → 生成最终结果</text>
+
+      <!-- modelNode -> END -->
+      <line x1="550" y1="506" x2="550" y2="548" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+      <circle cx="550" cy="580" r="30" fill="#1c2433" stroke="#64708a" stroke-width="2" />
+      <text x="550" y="585" text-anchor="middle" fill="#cfe3ff" font-size="13">END</text>
+
+      <!-- brace: superstep -->
+      <path d="M 60 228 L 45 228 L 45 398 L 60 398" fill="none" stroke="#3a4152" stroke-width="2" />
+      <text x="30" y="320" fill="#6e7a90" font-size="12" transform="rotate(-90 30 320)" text-anchor="middle">superstep（并行超步）</text>
+    </svg>
+  </div>
+
+  <div class="card">
+    <div class="note">
+      整张图是一次「<span class="k">扇出 → 并行 → 汇合</span>」：<br />
+      ① <code>analyze</code> 先问模型要 5 个国内可借鉴网站；<br />
+      ② 条件边函数返回 <code>Send[]</code>，为每个 url 各派发一个 <code>fetchTool</code> 任务，它们在<b>同一个超步里并行执行</b>；<br />
+      ③ 所有 fetch 写回的正文被 reducer 拼进 <code>contents</code>，<code>modelNode</code> 作为<b>同步屏障</b>等它们全部完成后统一汇总。
+    </div>
+  </div>
+
+  <h2>二、调用流程讲解</h2>
+  <ol class="steps">
+    <li>
+      <span class="k">START → analyze</span>：把用户主题交给 LLM，要求它只返回一个 JSON 字符串数组（5 个国内网站 URL）。
+      代码里用 <code>extractUrls()</code> 兜底正则提取，避免模型多说了几句就解析失败。
+    </li>
+    <li>
+      <span class="k">analyze →（条件边）dispatchFetch</span>：路由函数把 <code>state.urls</code> 逐项 <code>map</code> 成
+      <code>new Send("fetchTool", { url })</code>。返回几个 Send，就会并起几个 fetch 任务——<b>数量由数据决定，而不是写死的边</b>。
+    </li>
+    <li>
+      <span class="k">fetchTool × N（并行）</span>：每个任务只拿到自己的 <code>{ url }</code>（Send 传进去的局部状态），
+      用 <code>fetchTool.invoke()</code> 抓正文，然后返回 <code>{ contents: [正文] }</code>。
+    </li>
+    <li>
+      <span class="k">contents 汇合</span>：N 个任务同时写 <code>contents</code>，因此该字段必须声明
+      <code>reducer: (a, b) =&gt; a.concat(b)</code>，否则并发写同一字段会抛 <code>InvalidUpdateError</code>。
+    </li>
+    <li>
+      <span class="k">fetchTool → modelNode → END</span>：<code>modelNode</code> 有多个入边，天然充当同步屏障，
+      等所有 fetch 完成后才执行，读取完整的 <code>contents</code> 生成最终汇总结果。
+    </li>
+  </ol>
+
+  <h2>三、节点表</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>节点</th><th>类型</th><th>职责</th><th>读 / 写状态</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>analyze</code></td>
+          <td><span class="tag">LLM 节点</span></td>
+          <td>分析用户主题，整理出 5 个国内可借鉴网站</td>
+          <td>读 <code>topic</code> → 写 <code>urls</code></td>
+        </tr>
+        <tr>
+          <td><code>fetchTool</code></td>
+          <td><span class="tag">工具节点</span> <span class="tag">并行 × N</span></td>
+          <td>抓取单个 url 的网页正文（由 Send 动态派发）</td>
+          <td>读 <code>url</code>（Send 局部参数） → 写 <code>contents</code></td>
+        </tr>
+        <tr>
+          <td><code>modelNode</code></td>
+          <td><span class="tag">LLM 节点</span> <span class="tag">同步屏障</span></td>
+          <td>汇总所有抓取内容，产出可借鉴要点</td>
+          <td>读 <code>topic</code> + <code>contents</code> → 写 <code>report</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>四、边关系表</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>起点</th><th>终点</th><th>类型</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>__start__</code></td><td><code>analyze</code></td><td>普通边</td><td>入口，先做主题分析</td></tr>
+        <tr><td><code>analyze</code></td><td><code>fetchTool</code> × N</td><td class="w">条件边（返回 Send[]）</td><td>按 urls 数量动态并行派发</td></tr>
+        <tr><td><code>fetchTool</code></td><td><code>modelNode</code></td><td>普通边</td><td>所有并行任务完成后汇合</td></tr>
+        <tr><td><code>modelNode</code></td><td><code>__end__</code></td><td>普通边</td><td>输出最终 <code>report</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>五、状态字段表</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>字段</th><th>类型</th><th>写法</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>topic</code></td><td><code>string</code></td><td>普通字段</td><td>用户输入的主题（如“在线教育知识付费平台”）</td></tr>
+        <tr><td><code>urls</code></td><td><code>string[]</code></td><td>普通字段</td><td>analyze 分析出的 5 个网站</td></tr>
+        <tr><td><code>contents</code></td><td><code>string[]</code></td><td class="g">reducer: concat</td><td>并行 fetch 的结果累加（避免并发冲突）</td></tr>
+        <tr><td><code>report</code></td><td><code>string</code></td><td>普通字段</td><td>模型最终汇总结果</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>六、要点补充</h2>
+  <div class="card">
+    <ul>
+      <li><span class="k">Send 是什么：</span>它让你在<b>条件边里</b>动态决定「调哪个节点、带什么状态」。返回一个 Send 就派一个任务，返回数组就并行派多个。</li>
+      <li><span class="k">与 3.parallel-flow 的区别：</span>那一课是<b>写死的 3 条并行边</b>（固定扇出）；这里用的是 <code>Send</code>，扇出<b>数量由 analyze 的结果决定</b>（动态扇出 / map-reduce）。</li>
+      <li><span class="w">为什么 contents 必须配 reducer：</span>同一超步里 N 个 fetch 同时更新同一个字段，LangGraph 默认不允许，必须用 reducer 定义「怎么合并」。</li>
+      <li><span class="g">同步屏障：</span><code>modelNode</code> 有多个上游（N 个 fetch），它会等所有上游都到达才执行，因此能读到合并后的完整 <code>contents</code>。</li>
+      <li><span class="k">健壮性：</span>抓取走的是真实外部网络，所以 <code>fetch</code> 加了 15s 超时，<code>fetchToolNode</code> 用 try/catch 保证单个站点失败不影响整体汇总。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

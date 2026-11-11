@@ -1,0 +1,16 @@
+{
+  "name": "@todo/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "pnpm test:unit",
+    "test:unit": "vitest run --config ../config/vitest.config.ts",
+    "test:unit:watch": "vitest --config ../config/vitest.config.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@todo/config": "workspace:*"
+  }
+}

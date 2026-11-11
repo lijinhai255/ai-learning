@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+out/
+.vite/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+services/intelligence-fastapi/.venv/
+services/billing-spring/target/
+services/api-nest/dist/

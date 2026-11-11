@@ -1,0 +1,37 @@
+version: "1.0"
+
+services:
+  miaoma-pg:
+    image:  postgres:18
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=xiao123
+      - POSTGRES_DB=myapp
+    networks:
+      - miaoma-net
+  miaoma-server:
+    image: heyi08/heyi:1.0
+    ports:
+      - 3002:3000
+    networks:
+      - miaoma-net
+  miaoma-caddy:
+    image: caddy:2
+    ports:
+      - 80:80
+    volumes:
+      - ./site:/srv:ro
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - miaoma-net
+  # redis:
+  # kafka
+  # clickhouse
+  # qdrant
+
+
+networks:
+  miaoma-net:
+    driver: bridge

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>LangGraph 工作流结构图 · 并行分支 + 汇合</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 24px 64px;
+    background: #eef1f5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    color: #1f2933;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .src { font-size: 12.5px; color: #64748b; margin-bottom: 24px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, .05);
+  }
+  .card + .card { margin-top: 20px; }
+  .diagram { display: flex; justify-content: center; }
+  svg { max-width: 100%; height: auto; }
+  h2 { font-size: 15px; margin: 0 0 14px; color: #0f172a; }
+  .legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 12.5px; color: #475569; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; display: inline-block; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+  th { color: #64748b; font-weight: 600; background: #f8fafc; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    background: #f1f5f9;
+    padding: 1.5px 5px;
+    border-radius: 4px;
+    color: #0f172a;
+  }
+  .tag { font-size: 11px; padding: 1.5px 7px; border-radius: 20px; white-space: nowrap; }
+  .t-node { background: #e3f2fd; color: #1565c0; }
+  .t-merge { background: #f3e5f5; color: #7b1fa2; }
+  .t-end  { background: #eceff1; color: #546e7a; }
+  ul { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.85; color: #334155; }
+  .flowline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: #334155; line-height: 2.1; }
+  .flowline b { color: #1565c0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>并行分支：三个 LLM 节点同时跑，再汇合到 aggregator</h1>
+  <div class="src">langgraph-demo/src/3.parallel-flow/agent.ts · StateGraph(StateAnnotation) · fan-out / fan-in</div>
+
+  <div class="card">
+    <div class="legend">
+      <span><i class="sw" style="background:#e8f5e9;border-color:#43a047"></i>开始 / 结束</span>
+      <span><i class="sw" style="background:#e3f2fd;border-color:#1976d2"></i>调模型节点（llm.invoke）</span>
+      <span><i class="sw" style="background:#f3e5f5;border-color:#8e24aa"></i>合并节点（不调模型）</span>
+      <span><i class="sw" style="background:#fff;border-color:#1976d2;border-style:dashed"></i>并行执行区（同一批触发）</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="diagram">
+      <svg viewBox="0 0 900 590" width="900" role="img" aria-label="LangGraph 并行分支与汇合结构图">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#607d8b" />
+          </marker>
+          <marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#8e24aa" />
+          </marker>
+        </defs>
+
+        <!-- 入口 -->
+        <text x="534" y="34" font-size="12" fill="#64748b">invoke({ topic: "前端开发" })</text>
+        <rect x="380" y="16" width="140" height="44" rx="22" fill="#e8f5e9" stroke="#43a047" stroke-width="1.6" />
+        <text x="450" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#2e7d32">START</text>
+
+        <!-- START 扇形分发到三个节点 -->
+        <line x1="450" y1="60" x2="174" y2="164" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+        <line x1="450" y1="60" x2="450" y2="164" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+        <line x1="450" y1="60" x2="726" y2="164" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <!-- 并行执行区 -->
+        <rect x="35" y="150" width="830" height="120" rx="14" fill="none" stroke="#1976d2" stroke-width="1.5" stroke-dasharray="7 6" />
+        <rect x="36" y="128" width="170" height="22" rx="6" fill="#ffffff" />
+        <text x="46" y="144" font-size="12" font-weight="700" fill="#1565c0">并行：同一批同时执行</text>
+
+        <!-- 三个并行节点 -->
+        <rect x="45" y="170" width="250" height="80" rx="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.6" />
+        <text x="170" y="205" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0d47a1">callLlm1</text>
+        <text x="170" y="226" text-anchor="middle" font-size="11.5" fill="#3f6ea5">写笑话 → { joke }</text>
+
+        <rect x="325" y="170" width="250" height="80" rx="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.6" />
+        <text x="450" y="205" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0d47a1">callLlm2</text>
+        <text x="450" y="226" text-anchor="middle" font-size="11.5" fill="#3f6ea5">写故事 → { story }</text>
+
+        <rect x="605" y="170" width="250" height="80" rx="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.6" />
+        <text x="730" y="205" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0d47a1">callLlm3</text>
+        <text x="730" y="226" text-anchor="middle" font-size="11.5" fill="#3f6ea5">写诗歌 → { poem }</text>
+
+        <!-- 三个节点汇合到 aggregator -->
+        <line x1="170" y1="250" x2="398" y2="372" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+        <line x1="450" y1="250" x2="450" y2="372" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+        <line x1="730" y1="250" x2="502" y2="372" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+        <rect x="368" y="292" width="164" height="20" rx="5" fill="#ffffff" />
+        <text x="450" y="307" text-anchor="middle" font-size="11.5" fill="#546e7a">三条入边 = 等三个都完成</text>
+
+        <!-- 合并节点 -->
+        <rect x="320" y="376" width="260" height="88" rx="10" fill="#f3e5f5" stroke="#8e24aa" stroke-width="1.6" />
+        <text x="450" y="407" text-anchor="middle" font-size="14.5" font-weight="700" fill="#6a1b9a">aggregator</text>
+        <text x="450" y="428" text-anchor="middle" font-size="11.5" fill="#8e6aa0">不调模型，纯字符串拼接</text>
+        <text x="450" y="448" text-anchor="middle" font-size="11.5" fill="#8e6aa0">→ { combinedOutput }</text>
+
+        <!-- aggregator -> END -->
+        <line x1="450" y1="464" x2="450" y2="510" stroke="#8e24aa" stroke-width="1.6" marker-end="url(#arrowPurple)" />
+
+        <!-- END -->
+        <rect x="390" y="514" width="120" height="44" rx="22" fill="#eceff1" stroke="#607d8b" stroke-width="1.6" />
+        <text x="450" y="542" text-anchor="middle" font-size="14" font-weight="700" fill="#455a64">END</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>调用流程（一次 invoke 走完的路）</h2>
+    <div class="flowline">
+      ① <code>invoke({ topic })</code> → <b>START</b> →
+      ② <code>callLlm1</code> / <code>callLlm2</code> / <code>callLlm3</code> <b>同时</b>执行（彼此之间没有边，属于同一批）→
+      ③ 三条边都指向 <code>aggregator</code>，<b>等三个节点全部结束后</b>才轮到它（fan-in 汇合）→
+      ④ <code>aggregator</code> 把 <code>story / joke / poem</code> 拼成 <code>combinedOutput</code> →
+      ⑤ <b>END</b>，返回最终 state
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>节点（做什么）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:150px">节点名</th><th style="width:130px">类型</th><th>作用 / 状态读写</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>callLlm1</code></td><td><span class="tag t-node">并行分支</span></td><td>以 <code>topic</code> 为题写笑话，返回 <code>{ joke }</code></td></tr>
+        <tr><td><code>callLlm2</code></td><td><span class="tag t-node">并行分支</span></td><td>以 <code>topic</code> 为题写故事，返回 <code>{ story }</code></td></tr>
+        <tr><td><code>callLlm3</code></td><td><span class="tag t-node">并行分支</span></td><td>以 <code>topic</code> 为题写诗歌，返回 <code>{ poem }</code></td></tr>
+        <tr><td><code>aggregator</code></td><td><span class="tag t-merge">汇合节点</span></td><td>不调模型，把三份结果拼成一段文字，返回 <code>{ combinedOutput }</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>边（怎么流转）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:300px">从 → 到</th><th style="width:110px">类型</th><th>含义</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>__start__ → callLlm1</code></td><td><span class="tag t-node">扇出</span></td><td rowspan="3">同一个起点连出三条边 = fan-out，三个节点同时被触发</td></tr>
+        <tr><td><code>__start__ → callLlm2</code></td><td><span class="tag t-node">扇出</span></td></tr>
+        <tr><td><code>__start__ → callLlm3</code></td><td><span class="tag t-node">扇出</span></td></tr>
+        <tr><td><code>callLlm1 → aggregator</code></td><td><span class="tag t-merge">汇合</span></td><td rowspan="3">三个节点都指向同一个下游 = fan-in，<code>aggregator</code> 要等三条入边全部到达才开始</td></tr>
+        <tr><td><code>callLlm2 → aggregator</code></td><td><span class="tag t-merge">汇合</span></td></tr>
+        <tr><td><code>callLlm3 → aggregator</code></td><td><span class="tag t-merge">汇合</span></td></tr>
+        <tr><td><code>aggregator → __end__</code></td><td><span class="tag t-end">普通边</span></td><td>合并完直接结束</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>状态字段（StateAnnotation）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:190px">字段</th><th style="width:210px">写入方</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>topic</code></td><td>外部 <code>invoke()</code></td><td>三个并行节点的共同输入</td></tr>
+        <tr><td><code>joke</code> / <code>story</code> / <code>poem</code></td><td><code>callLlm1</code> / <code>2</code> / <code>3</code></td><td>各写各的字段，互不干扰</td></tr>
+        <tr><td><code>combinedOutput</code></td><td><code>aggregator</code></td><td>把上面三个字段拼成最终结果</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>三点补充说明</h2>
+    <ul>
+      <li><b>并行是真的并行：</b>三个节点之间没有任何边，LangGraph 把它们放进同一批（superstep）执行，所以是三次 <code>llm.invoke</code> 同时发出，总耗时≈最慢的那一个，而不是三个相加。</li>
+      <li><b>为什么能各写各的字段：</b>并行节点写的是不同的状态字段，没冲突。如果它们要写同一个字段，就必须给该字段配 <code>reducer</code>（比如累加/合并数组），否则会报并发更新冲突（InvalidUpdateError）。</li>
+      <li><b>汇合点是同步屏障：</b><code>aggregator</code> 有三条入边，三条都到齐才会执行；所以它在里面可以放心直接读 <code>state.joke / story / poem</code>，拿到的一定是最终值。</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

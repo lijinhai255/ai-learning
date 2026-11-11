@@ -1,0 +1,1 @@
+{"version":3,"file":"font.js","sources":["pages/extUI/font/font.nvue?type=page"],"sourcesContent":["import MiniProgramPage from '/Users/lipeizhong/Downloads/uni-app-notes/1.basic/basic/pages/extUI/font/font.nvue'\nwx.createPage(MiniProgramPage)"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AACA,GAAG,WAAW,eAAe;"}

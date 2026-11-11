@@ -1,0 +1,37 @@
+{
+    "name": "@todo-app/react",
+    "private": false,
+    "license": "MIT",
+    "version": "1.0.0",
+    "description": "Todo 应用共享 React UI 组件",
+    "type": "module",
+    "source": "src/index.tsx",
+    "main": "build/cjs/index.js",
+    "module": "build/esm/index.js",
+    "exports": {
+        ".": {
+            "import": "./build/esm/index.js"
+        },
+        "./style.css": {
+            "import": "./build/esm/index.css"
+        }
+    },
+    "sideEffects": ["*.css"],
+    "scripts": {
+        "build:watch": "tsup --watch",
+        "build": "tsup",
+        "clean": "rimraf build",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.3.1",
+        "rimraf": "6.0.1",
+        "tsup": "8.3.5",
+        "typescript": "5.6.3"
+    }
+}

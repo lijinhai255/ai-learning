@@ -1,0 +1,14 @@
+{
+  "name": "@todo/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "pnpm test:e2e",
+    "test:e2e": "playwright test --config playwright.config.ts",
+    "test:e2e:ui": "playwright test --config playwright.config.ts --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.1"
+  }
+}

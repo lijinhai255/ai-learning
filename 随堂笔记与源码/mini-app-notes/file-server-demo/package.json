@@ -1,0 +1,13 @@
+{
+  "name": "file-server-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "Heyi",
+  "license": "ISC",
+  "description": ""
+}

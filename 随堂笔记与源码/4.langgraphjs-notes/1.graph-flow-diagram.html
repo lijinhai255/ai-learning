@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>LangGraph 工作流结构图 · 2.graph-flow/agent.ts</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 24px 64px;
+    background: #eef1f5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    color: #1f2933;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .src { font-size: 12.5px; color: #64748b; margin-bottom: 24px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, .05);
+  }
+  .card + .card { margin-top: 20px; }
+  .diagram { display: flex; justify-content: center; }
+  svg { max-width: 100%; height: auto; }
+  h2 { font-size: 15px; margin: 0 0 14px; color: #0f172a; }
+  .legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 12.5px; color: #475569; margin-bottom: 4px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; display: inline-block; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+  th { color: #64748b; font-weight: 600; background: #f8fafc; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    background: #f1f5f9;
+    padding: 1.5px 5px;
+    border-radius: 4px;
+    color: #0f172a;
+  }
+  .tag { font-size: 11px; padding: 1.5px 7px; border-radius: 20px; white-space: nowrap; }
+  .t-node { background: #e3f2fd; color: #1565c0; }
+  .t-cond { background: #fff3e0; color: #b26a00; }
+  .t-end  { background: #eceff1; color: #546e7a; }
+  ul { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.85; color: #334155; }
+  .warn { color: #b45309; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>LangGraph 工作流：写笑话 → 判断笑点 → 增强 → 润色</h1>
+  <div class="src">langgraph-demo/src/2.graph-flow/agent.ts · StateGraph(StateAnnotation)</div>
+
+  <div class="card">
+    <div class="legend">
+      <span><i class="sw" style="background:#e8f5e9;border-color:#43a047"></i>开始 / 结束</span>
+      <span><i class="sw" style="background:#fff;border-color:#90a4ae"></i>普通节点（处理逻辑）</span>
+      <span><i class="sw" style="background:#fff8e1;border-color:#f0a500;transform:rotate(45deg)"></i>条件边（分支判断）</span>
+      <span><i class="sw" style="background:#fff;border-color:#1976d2;border-style:dashed"></i>数据流（状态字段读写）</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="diagram">
+      <svg viewBox="0 0 640 800" width="640" role="img" aria-label="LangGraph 工作流结构图">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#607d8b" />
+          </marker>
+          <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#43a047" />
+          </marker>
+        </defs>
+
+        <!-- START -->
+        <rect x="310" y="16" width="140" height="44" rx="22" fill="#e8f5e9" stroke="#43a047" stroke-width="1.6" />
+        <text x="380" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#2e7d32">START</text>
+
+        <!-- START -> generateJoke -->
+        <line x1="380" y1="60" x2="380" y2="106" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <!-- generateJoke -->
+        <rect x="250" y="110" width="260" height="62" rx="10" fill="#ffffff" stroke="#90a4ae" stroke-width="1.6" />
+        <text x="380" y="138" text-anchor="middle" font-size="15" font-weight="700" fill="#263238">generateJoke</text>
+        <text x="380" y="158" text-anchor="middle" font-size="11.5" fill="#78909c">llm.invoke(主题) → { joke }</text>
+
+        <!-- generateJoke -> diamond -->
+        <line x1="380" y1="172" x2="380" y2="194" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <!-- 条件边 checkPunchline -->
+        <polygon points="380,198 510,260 380,322 250,260" fill="#fff8e1" stroke="#f0a500" stroke-width="1.6" />
+        <text x="380" y="255" text-anchor="middle" font-size="13.5" font-weight="700" fill="#8d6e00">checkPunchline</text>
+        <text x="380" y="274" text-anchor="middle" font-size="11" fill="#a1887f">条件边：返回 Pass / Fail</text>
+
+        <!-- Pass 分支：绕左侧回到 END -->
+        <path d="M 250 260 H 110 V 730 H 316" fill="none" stroke="#43a047" stroke-width="1.6" marker-end="url(#arrowGreen)" />
+        <rect x="147" y="232" width="48" height="19" rx="5" fill="#ffffff" />
+        <text x="171" y="246" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2e7d32">Pass</text>
+        <text x="88" y="500" text-anchor="middle" font-size="11" fill="#2e7d32" transform="rotate(-90 88 500)">跳过增强，直接结束</text>
+
+        <!-- Fail 分支 -->
+        <line x1="380" y1="322" x2="380" y2="416" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+        <rect x="387" y="359" width="42" height="19" rx="5" fill="#ffffff" />
+        <text x="408" y="373" text-anchor="middle" font-size="12.5" font-weight="700" fill="#c62828">Fail</text>
+
+        <!-- improveJoke -->
+        <rect x="250" y="420" width="260" height="62" rx="10" fill="#ffffff" stroke="#90a4ae" stroke-width="1.6" />
+        <text x="380" y="448" text-anchor="middle" font-size="15" font-weight="700" fill="#263238">improveJoke</text>
+        <text x="380" y="468" text-anchor="middle" font-size="11.5" fill="#78909c">llm.invoke(更搞笑) → { improveJoke }</text>
+
+        <!-- improveJoke -> polishJoke -->
+        <line x1="380" y1="482" x2="380" y2="556" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <!-- polishJoke -->
+        <rect x="250" y="560" width="260" height="62" rx="10" fill="#ffffff" stroke="#90a4ae" stroke-width="1.6" />
+        <text x="380" y="588" text-anchor="middle" font-size="15" font-weight="700" fill="#263238">polishJoke</text>
+        <text x="380" y="608" text-anchor="middle" font-size="11.5" fill="#78909c">读 improvedJoke → { finalJoke }</text>
+
+        <!-- polishJoke -> END -->
+        <line x1="380" y1="622" x2="380" y2="704" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <!-- END -->
+        <rect x="320" y="708" width="120" height="44" rx="22" fill="#eceff1" stroke="#607d8b" stroke-width="1.6" />
+        <text x="380" y="736" text-anchor="middle" font-size="14" font-weight="700" fill="#455a64">END</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>节点（做什么）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:150px">节点名</th><th style="width:120px">类型</th><th>作用 / 状态读写</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>generateJoke</code></td>
+          <td><span class="tag t-node">节点</span></td>
+          <td>调用模型生成第一版笑话，返回 <code>{ joke }</code> 写回状态</td>
+        </tr>
+        <tr>
+          <td><code>checkPunchline</code></td>
+          <td><span class="tag t-cond">条件边</span></td>
+          <td>判断笑话有没有笑点，返回 <code>"Pass"</code> 或 <code>"Fail"</code>，决定走哪条分支</td>
+        </tr>
+        <tr>
+          <td><code>improveJoke</code></td>
+          <td><span class="tag t-node">节点</span></td>
+          <td>让笑话更有趣，返回 <code>{ improveJoke }</code> 写回状态</td>
+        </tr>
+        <tr>
+          <td><code>polishJoke</code></td>
+          <td><span class="tag t-node">节点</span></td>
+          <td>给笑话加历史典故，读取 <code>state.improvedJoke</code>，返回 <code>{ finalJoke }</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>边（怎么流转）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:290px">从 → 到</th><th style="width:110px">类型</th><th>触发条件</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>__start__ → generateJoke</code></td><td><span class="tag t-cond">普通边</span></td><td>图一启动就进入生成节点</td></tr>
+        <tr><td><code>generateJoke → checkPunchline</code></td><td><span class="tag t-cond">条件边</span></td><td>生成完立刻判断笑点</td></tr>
+        <tr><td><code>checkPunchline → __end__</code></td><td><span class="tag t-cond">条件分支</span></td><td>返回 <code>Pass</code>，笑话够好笑，直接结束</td></tr>
+        <tr><td><code>checkPunchline → improveJoke</code></td><td><span class="tag t-cond">条件分支</span></td><td>返回 <code>Fail</code>，进入增强环节</td></tr>
+        <tr><td><code>improveJoke → polishJoke</code></td><td><span class="tag t-cond">普通边</span></td><td>增强完再润色</td></tr>
+        <tr><td><code>polishJoke → __end__</code></td><td><span class="tag t-cond">普通边</span></td><td>润色完流程结束</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>状态字段（StateAnnotation）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:170px">字段</th><th style="width:130px">写入方</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>topic</code></td><td>—</td><td class="warn">定义了但全程没被使用</td></tr>
+        <tr><td><code>joke</code></td><td><code>generateJoke</code></td><td>第一版笑话（也是增强节点的输入）</td></tr>
+        <tr><td><code>improvedJoke</code></td><td>—</td><td class="warn">从未被写入</td></tr>
+        <tr><td><code>finalJoke</code></td><td><code>polishJoke</code></td><td>最终输出</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>三处与图结构对不上的地方</h2>
+    <ul>
+      <li><span class="warn">输入字段错位：</span><code>generateJoke</code> 里读的是 <code>state.joke</code>，但 <code>joke</code> 正是在这个节点里才被写入的；按注释意图应该读 <code>state.topic</code>。</li>
+      <li><span class="warn">返回 key 拼写不一致：</span><code>improveJoke</code> 返回 <code>{ improveJoke }</code>，而状态字段叫 <code>improvedJoke</code>，导致这次更新写不进状态（LangGraph 只接受状态里已声明的 key）。</li>
+      <li><span class="warn">连带读到 undefined：</span>因为上一条，<code>polishJoke</code> 读到的 <code>state.improvedJoke</code> 始终是 <code>undefined</code>，提示词里会拼上 "undefined"。</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

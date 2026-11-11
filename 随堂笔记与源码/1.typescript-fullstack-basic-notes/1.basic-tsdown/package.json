@@ -1,0 +1,17 @@
+{
+  "name": "1.basic-tsdown",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsdown"
+  },
+  "keywords": [],
+  "author": "Heyi",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "typescript": "6.0.3",
+    "tsdown": "0.23.0"
+  }
+}

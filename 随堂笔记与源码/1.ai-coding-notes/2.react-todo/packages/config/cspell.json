@@ -1,0 +1,28 @@
+{
+  "version": "0.2",
+  "language": "en,en-GB,zh-CN",
+  "useGitignore": true,
+  "files": ["**/*.{ts,tsx,vue,md,json,yml,yaml}"],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/pnpm-lock.yaml",
+    "**/pnpm-workspace.yaml"
+  ],
+  "words": [
+    "NestJS",
+    "Vite",
+    "Vitest",
+    "Playwright",
+    "pnpm",
+    "Todo",
+    "todos",
+    "tsconfig",
+    "worktree",
+    "monorepo",
+    "CSpell",
+    "MCP",
+    "esbuild"
+  ]
+}

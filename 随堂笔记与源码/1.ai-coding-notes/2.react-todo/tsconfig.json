@@ -1,0 +1,10 @@
+{
+  "extends": "./packages/config/tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "./apps/web-react" },
+    { "path": "./apps/web-vue" },
+    { "path": "./apps/api-nest" },
+    { "path": "./packages/domain" }
+  ]
+}

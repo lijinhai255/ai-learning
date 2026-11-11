@@ -1,0 +1,27 @@
+{
+    "name": "@todo-app/core",
+    "private": false,
+    "license": "MIT",
+    "version": "1.0.0",
+    "description": "Todo 应用共享领域类型与常量",
+    "type": "module",
+    "source": "src/index.ts",
+    "main": "build/cjs/index.js",
+    "module": "build/esm/index.js",
+    "exports": {
+        ".": {
+            "import": "./build/esm/index.js"
+        }
+    },
+    "scripts": {
+        "build:watch": "tsup --watch",
+        "build": "tsup",
+        "clean": "rimraf build",
+        "typecheck": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "rimraf": "6.0.1",
+        "tsup": "8.3.5",
+        "typescript": "5.6.3"
+    }
+}

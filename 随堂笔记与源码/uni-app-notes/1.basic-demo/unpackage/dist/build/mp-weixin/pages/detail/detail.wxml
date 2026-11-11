@@ -1,0 +1,1 @@
+<view class="todo-container"><input placeholder="添加待办事项" bindconfirm="{{a}}" value="{{b}}" bindinput="{{c}}"/><view wx:for="{{d}}" wx:for-item="todo" wx:key="c" class="todo-item"><text>{{todo.a}}</text><button bindtap="{{todo.b}}">删除</button></view></view>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LangGraph 流程讲解 · 子图 subAgent</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel-2: #1e222d;
+    --border: #2a2f3d;
+    --text: #e6e9f0;
+    --muted: #9aa4b8;
+    --accent: #6ea8fe;
+    --accent-2: #7ee0b8;
+    --warn: #ffcc66;
+    --danger: #ff8a8a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: .5px; }
+  h2 {
+    font-size: 20px; margin: 44px 0 16px; padding-left: 12px;
+    border-left: 4px solid var(--accent);
+  }
+  h3 { font-size: 16px; margin: 24px 0 8px; color: var(--accent-2); }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 4px; }
+  .file {
+    display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; color: var(--accent-2); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px;
+    margin-top: 10px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px; margin-top: 18px;
+  }
+  .diagram { overflow-x: auto; background: var(--panel-2); border-radius: 14px; border: 1px solid var(--border); padding: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 6px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; background: var(--panel-2); }
+  tr:last-child td { border-bottom: none; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+    background: #10131a; border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+    color: #cfe3ff;
+  }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .tag.g { color: var(--accent-2); border-color: #2e5b4a; }
+  .tag.w { color: var(--warn); border-color: #5b4a2e; }
+  .k { color: var(--accent); font-weight: 600; }
+  .g { color: var(--accent-2); font-weight: 600; }
+  .w { color: var(--warn); font-weight: 600; }
+  .d { color: var(--danger); font-weight: 600; }
+  ul { margin: 8px 0 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  .steps { counter-reset: s; list-style: none; padding-left: 0; }
+  .steps li { position: relative; padding-left: 40px; margin: 14px 0; }
+  .steps li::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; left: 0; top: 0;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #0b0e14; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .note { font-size: 13px; color: var(--muted); }
+  .warnbox {
+    border-left: 4px solid var(--danger); background: #1d1418;
+    border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>子图（Sub-graph）流程讲解</h1>
+  <div class="sub">LangGraph.js：把一个编译好的图当作另一个图里的「节点」来用（这里是两个子图节点）</div>
+  <div class="file">src/5.sub-graph/agent.ts</div>
+
+  <h2>一、整体结构图</h2>
+  <p class="note">这份代码里定义了 <b>两个图</b>：右边是子图 <code>subAgent</code>，左边是主图 <code>agent</code>。主图里有 <b>两个</b>子图节点 <code>subAgent1</code>、<code>subAgent2</code>，它们内部各自手动 `invoke` 了右边同一张子图。</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1120 620" width="100%" height="620" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace, Menlo, monospace">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#64708a" />
+        </marker>
+        <marker id="arrowP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#a97ce0" />
+        </marker>
+        <linearGradient id="gF" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1e4d3c" /><stop offset="1" stop-color="#16362c" />
+        </linearGradient>
+        <linearGradient id="gM" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4a3a1e" /><stop offset="1" stop-color="#332915" />
+        </linearGradient>
+        <linearGradient id="gS" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a2350" /><stop offset="1" stop-color="#271a38" />
+        </linearGradient>
+      </defs>
+
+      <!-- 分区标题 -->
+      <text x="330" y="30" text-anchor="middle" fill="#9db8e0" font-size="15" font-weight="700">主图 agent</text>
+      <text x="870" y="30" text-anchor="middle" fill="#c9a8ee" font-size="15" font-weight="700">子图 subAgent（被当作节点调用）</text>
+      <line x1="600" y1="14" x2="600" y2="604" stroke="#2a2f3d" stroke-width="1" stroke-dasharray="6 6" />
+
+      <!-- ===== 主图 ===== -->
+      <circle cx="330" cy="66" r="27" fill="#1c2433" stroke="#64708a" stroke-width="2" />
+      <text x="330" y="71" text-anchor="middle" fill="#cfe3ff" font-size="12">START</text>
+      <line x1="330" y1="93" x2="330" y2="112" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <!-- fetchTool -->
+      <rect x="215" y="114" width="230" height="64" rx="12" fill="url(#gF)" stroke="#4fca9d" stroke-width="2" />
+      <text x="330" y="141" text-anchor="middle" fill="#d6ffee" font-size="13" font-weight="700">fetchTool</text>
+      <text x="330" y="161" text-anchor="middle" fill="#8fd8bd" font-size="11">抓取 url → 写 text</text>
+      <line x1="330" y1="178" x2="330" y2="200" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <!-- subAgent1 -->
+      <rect x="180" y="202" width="300" height="76" rx="12" fill="url(#gS)" stroke="#a97ce0" stroke-width="2" stroke-dasharray="6 4" />
+      <text x="330" y="230" text-anchor="middle" fill="#e6d2ff" font-size="13" font-weight="700">subAgent1（节点）</text>
+      <text x="330" y="250" text-anchor="middle" fill="#c3a6e6" font-size="10.5">await subAgent.invoke({ times:0, url:baidu })</text>
+      <text x="330" y="268" text-anchor="middle" fill="#c3a6e6" font-size="10.5">然后 return {}  ← 注意</text>
+      <line x1="330" y1="278" x2="330" y2="300" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <!-- subAgent2 -->
+      <rect x="180" y="302" width="300" height="76" rx="12" fill="url(#gS)" stroke="#a97ce0" stroke-width="2" stroke-dasharray="6 4" />
+      <text x="330" y="330" text-anchor="middle" fill="#e6d2ff" font-size="13" font-weight="700">subAgent2（节点）</text>
+      <text x="330" y="350" text-anchor="middle" fill="#c3a6e6" font-size="10.5">await subAgent.invoke({ times:0, url:baidu })</text>
+      <text x="330" y="368" text-anchor="middle" fill="#c3a6e6" font-size="10.5">然后 return {}  ← 注意</text>
+      <line x1="330" y1="378" x2="330" y2="400" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <!-- modelNode -->
+      <rect x="215" y="402" width="230" height="64" rx="12" fill="url(#gM)" stroke="#e0b34f" stroke-width="2" />
+      <text x="330" y="429" text-anchor="middle" fill="#fff0cf" font-size="13" font-weight="700">modelNode</text>
+      <text x="330" y="449" text-anchor="middle" fill="#dcc48a" font-size="11">分析 state.text 的价值</text>
+      <line x1="330" y1="466" x2="330" y2="486" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <circle cx="330" cy="513" r="27" fill="#1c2433" stroke="#64708a" stroke-width="2" />
+      <text x="330" y="518" text-anchor="middle" fill="#cfe3ff" font-size="12">END</text>
+
+      <!-- 调用子图：两条虚线箭头 -->
+      <path d="M 480 240 C 560 240, 610 150, 700 150" fill="none" stroke="#a97ce0" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowP)" />
+      <path d="M 480 340 C 560 340, 610 300, 700 300" fill="none" stroke="#a97ce0" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowP)" />
+      <text x="590" y="232" text-anchor="middle" fill="#c3a6e6" font-size="11">invoke 子图</text>
+      <text x="600" y="332" text-anchor="middle" fill="#c3a6e6" font-size="11">invoke 子图</text>
+
+      <!-- ===== 子图 ===== -->
+      <rect x="690" y="50" width="360" height="470" rx="16" fill="none" stroke="#5b3f7a" stroke-width="2" stroke-dasharray="8 5" />
+
+      <circle cx="870" cy="98" r="25" fill="#1c2433" stroke="#a97ce0" stroke-width="2" />
+      <text x="870" y="103" text-anchor="middle" fill="#e6d2ff" font-size="11">START</text>
+      <line x1="870" y1="123" x2="870" y2="148" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <rect x="760" y="150" width="220" height="62" rx="12" fill="url(#gF)" stroke="#4fca9d" stroke-width="2" />
+      <text x="870" y="178" text-anchor="middle" fill="#d6ffee" font-size="13" font-weight="700">fetchTool</text>
+      <text x="870" y="197" text-anchor="middle" fill="#8fd8bd" font-size="11">抓取 url → 写 text</text>
+      <line x1="870" y1="212" x2="870" y2="238" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <rect x="760" y="240" width="220" height="62" rx="12" fill="url(#gM)" stroke="#e0b34f" stroke-width="2" />
+      <text x="870" y="268" text-anchor="middle" fill="#fff0cf" font-size="13" font-weight="700">modelNode</text>
+      <text x="870" y="287" text-anchor="middle" fill="#dcc48a" font-size="11">分析 state.text 的价值</text>
+      <line x1="870" y1="302" x2="870" y2="328" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <circle cx="870" cy="355" r="25" fill="#1c2433" stroke="#a97ce0" stroke-width="2" />
+      <text x="870" y="360" text-anchor="middle" fill="#e6d2ff" font-size="11">END</text>
+
+      <text x="870" y="418" text-anchor="middle" fill="#9aa4b8" font-size="11">子图每次运行状态独立（times: 0 → 1）</text>
+      <text x="870" y="440" text-anchor="middle" fill="#9aa4b8" font-size="11">subAgent1 / subAgent2 调用完全相同</text>
+      <text x="870" y="470" text-anchor="middle" fill="#ff8a8a" font-size="11">⚠ 两个节点都 return {} → 主图状态未被更新</text>
+    </svg>
+  </div>
+
+  <h2>二、调用流程讲解</h2>
+  <ol class="steps">
+    <li>
+      <span class="k">先定义子图 subAgent</span>：<code>START → fetchTool → modelNode → END</code>，编译成 <code>subAgent</code>。
+      它和主图共用同一份 <code>StateAnnotation</code>（字段：<code>url / times / text</code>）。
+    </li>
+    <li>
+      <span class="k">主图 agent 复用同一个 fetchTool / modelNode</span>，并加上了两个子图节点 <code>subAgent1</code>、<code>subAgent2</code>。
+      节点名只是字符串，节点本体是普通函数，不是把编译好的图直接塞进去。
+    </li>
+    <li>
+      <span class="k">主图执行 <code>START → fetchTool</code></span>：抓 baidu，写 <code>text</code>、<code>times+1</code>。
+    </li>
+    <li>
+      <span class="k">进入 <code>subAgent1</code> 节点</span>：手动 <code>await subAgent.invoke({ times: 0, url: "https://www.baidu.com" })</code>——
+      把子图当函数调用，跑完整条子图流程，拿到输出后 <code>console.log</code>，然后 <code>return {}</code>。
+    </li>
+    <li>
+      <span class="k">顺序执行到 <code>subAgent2</code> 节点</span>：<b>与 subAgent1 逻辑完全相同</b>，再次 invoke 子图、再打印、再 <code>return {}</code>。
+      两者由边连接，所以是<b>先后串行</b>执行，不是并行。
+    </li>
+    <li>
+      <span class="k">主图 <code>modelNode → END</code></span>：读取的仍是主图 <code>fetchTool</code> 写的 <code>text</code>，输出最终结果。
+    </li>
+  </ol>
+
+  <div class="warnbox">
+    <b>⚠ 需要注意的两点：</b><br />
+    ① 两个子图节点都以 <code>return {}</code> 结尾，<b>没有把子图结果写回主图状态</b>，子图那一轮的结果只停留在日志里。<br />
+    ② <code>subAgent1</code> 和 <code>subAgent2</code> 的调用<b>完全一样</b>（同一个 url、同样的参数），当前效果上属于重复执行；如果是要演示「多个不同子图」，需要给它们不同的输入。
+  </div>
+
+  <h2>三、主图 agent · 节点表</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>节点</th><th>类型</th><th>职责</th><th>读 / 写状态</th></tr></thead>
+      <tbody>
+        <tr><td><code>fetchTool</code></td><td><span class="tag g">工具节点</span></td><td>抓取 url 的网页正文</td><td>读 <code>url</code> → 写 <code>text</code>、<code>times</code></td></tr>
+        <tr><td><code>subAgent1</code></td><td><span class="tag w">子图节点</span></td><td>手动 invoke 子图，仅打印结果</td><td>不读不写（<code>return {}</code>）</td></tr>
+        <tr><td><code>subAgent2</code></td><td><span class="tag w">子图节点</span></td><td>手动 invoke 子图，仅打印结果</td><td>不读不写（<code>return {}</code>）</td></tr>
+        <tr><td><code>modelNode</code></td><td><span class="tag">LLM 节点</span></td><td>分析 <code>state.text</code> 的价值</td><td>读 <code>text</code> → 不变更</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>四、主图 agent · 边表</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>起点</th><th>终点</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>__start__</code></td><td><code>fetchTool</code></td><td>入口</td></tr>
+        <tr><td><code>fetchTool</code></td><td><code>subAgent1</code></td><td>抓完页面 → 第一次调用子图</td></tr>
+        <tr><td><code>subAgent1</code></td><td><code>subAgent2</code></td><td>串行 → 第二次调用子图</td></tr>
+        <tr><td><code>subAgent2</code></td><td><code>modelNode</code></td><td>子图调用结束 → 汇总</td></tr>
+        <tr><td><code>modelNode</code></td><td><code>__end__</code></td><td>结束</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>五、子图 subAgent · 结构</h2>
+  <div class="card">
+    <h3>节点</h3>
+    <table>
+      <thead><tr><th>节点</th><th>职责</th></tr></thead>
+      <tbody>
+        <tr><td><code>fetchTool</code></td><td>抓取传入的 url，写 <code>text</code></td></tr>
+        <tr><td><code>modelNode</code></td><td>分析 <code>text</code> 的价值</td></tr>
+      </tbody>
+    </table>
+    <h3>边</h3>
+    <table>
+      <thead><tr><th>起点</th><th>终点</th></tr></thead>
+      <tbody>
+        <tr><td><code>__start__</code></td><td><code>fetchTool</code></td></tr>
+        <tr><td><code>fetchTool</code></td><td><code>modelNode</code></td></tr>
+        <tr><td><code>modelNode</code></td><td><code>__end__</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>六、状态字段表（两个图共用）</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>字段</th><th>类型</th><th>谁写的</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>url</code></td><td><code>string</code></td><td>调用方初始传入</td><td>要抓取的目标地址</td></tr>
+        <tr><td><code>times</code></td><td><code>number</code></td><td><code>fetchTool</code> 节点 +1</td><td>计数 / 循环控制位</td></tr>
+        <tr><td><code>text</code></td><td><code>string</code></td><td><code>fetchTool</code> 节点</td><td>抓到的网页正文，供 <code>modelNode</code> 分析</td></tr>
+      </tbody>
+    </table>
+    <p class="note">注意：两个图用的是<b>同一个 <code>StateAnnotation</code> 常量</b>，子图每次 invoke 都会用一份独立的状态（<code>times</code> 从 0 重新开始）。</p>
+  </div>
+
+  <h2>七、要点补充：子图的两种接法</h2>
+  <div class="card">
+    <ul>
+      <li>
+        <span class="k">写法 A（本文件）：子图当工具 ——</span>在节点函数里 <code>await subAgent.invoke(输入)</code>，
+        手动拿返回值、手动决定写回哪些字段。灵活，但要自己处理状态边界的映射。
+      </li>
+      <li>
+        <span class="g">写法 B：编译好的图直接当节点 ——</span><code>.addNode("subAgent", subAgent)</code>，
+        LangGraph 会自动把主图状态喂给子图、再把子图输出合并回主图。这是官方推荐的 native sub-graph 用法，本文件未采用。
+      </li>
+      <li>
+        <span class="w">两个子图节点是串行的：</span><code>subAgent1 → subAgent2</code> 是普通边，必须等前一个跑完才跑后一个；
+        想并行得让它们从同一个节点扇出（<code>__start__ → subAgent1 / subAgent2</code>），或改用 <code>Send</code>。
+      </li>
+      <li>
+        <span class="k">store：</span>两个图 <code>compile({ store })</code> 都传了 <code>InMemoryStore</code>，
+        用于跨线程的长期记忆；简单流程里即使暂时不用，也不影响执行。
+      </li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,45 @@
+.todo-button {
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 8px 16px;
+    transition: opacity 0.2s;
+}
+
+.todo-button:hover {
+    opacity: 0.85;
+}
+
+.todo-button-primary {
+    background: #2563eb;
+    color: #fff;
+}
+
+.todo-button-ghost {
+    background: transparent;
+    color: #2563eb;
+}
+
+.todo-button-danger {
+    background: #dc2626;
+    color: #fff;
+}
+
+.todo-input {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    padding: 8px 12px;
+}
+
+.todo-input:focus {
+    border-color: #2563eb;
+}
+
+.todo-checkbox {
+    cursor: pointer;
+    height: 18px;
+    width: 18px;
+}

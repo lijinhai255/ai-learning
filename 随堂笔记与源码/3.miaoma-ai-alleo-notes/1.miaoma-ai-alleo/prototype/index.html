@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 文档工作空间 · 低保真原型</title>
+  <style>
+    :root { --bg:#f5f6f8; --panel:#fff; --line:#e5e7eb; --text:#172033; --muted:#667085; --blue:#2563eb; --blue-soft:#eff6ff; --green:#15803d; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif; color:var(--text); background:var(--bg); }
+    button, input { font:inherit; }
+    button { cursor:pointer; border:1px solid var(--line); background:#fff; border-radius:7px; padding:7px 11px; color:var(--text); }
+    button.primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .app { min-height:100vh; display:grid; grid-template-columns:220px 1fr; }
+    .sidebar { background:#fbfbfc; border-right:1px solid var(--line); padding:18px 12px; }
+    .brand { font-weight:700; padding:0 10px 18px; }
+    .nav button { width:100%; text-align:left; border:0; background:transparent; margin:2px 0; }
+    .nav button.active, .nav button:hover { background:#eef2ff; color:#1d4ed8; }
+    .space-title { color:var(--muted); font-size:12px; margin:22px 10px 6px; }
+    .main { min-width:0; }
+    .topbar { height:58px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; padding:0 22px; }
+    .topbar .crumb { flex:1; color:var(--muted); font-size:14px; }
+    .topbar input { width:260px; border:1px solid var(--line); border-radius:7px; padding:8px 10px; }
+    .page { max-width:1180px; margin:0 auto; padding:28px; }
+    .page h1 { margin:0 0 8px; font-size:26px; }
+    .muted { color:var(--muted); }
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:24px 0; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
+    .card h3 { margin:0 0 6px; font-size:15px; }
+    .doc-list { background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    .doc-row { display:grid; grid-template-columns:1fr 180px 110px; gap:12px; padding:13px 16px; border-bottom:1px solid var(--line); align-items:center; cursor:pointer; }
+    .doc-row:last-child { border-bottom:0; }
+    .doc-row:hover { background:#f8fafc; }
+    .editor-layout { height:calc(100vh - 58px); display:grid; grid-template-columns:210px minmax(420px,1fr) 290px; }
+    .tree, .ai-panel { background:var(--panel); border-right:1px solid var(--line); padding:16px; overflow:auto; }
+    .ai-panel { border-right:0; border-left:1px solid var(--line); }
+    .tree h3, .ai-panel h3 { margin:0 0 14px; font-size:14px; }
+    .tree-item { padding:8px 9px; border-radius:6px; font-size:14px; margin-bottom:3px; cursor:pointer; }
+    .tree-item.active, .tree-item:hover { background:var(--blue-soft); color:#1d4ed8; }
+    .editor { background:#fff; overflow:auto; padding:54px 72px 100px; }
+    .editor h1 { font-size:32px; margin:0 0 25px; }
+    .editor h2 { margin-top:34px; font-size:22px; }
+    .editor p, .editor li { font-size:16px; line-height:1.8; }
+    .editor .block { padding:4px 8px; border-radius:5px; }
+    .editor .block:hover { background:#f8fafc; outline:1px dashed #cbd5e1; }
+    .ai-actions { display:grid; gap:8px; }
+    .ai-actions button { text-align:left; }
+    .result { margin-top:18px; padding:12px; border:1px solid #bfdbfe; background:#eff6ff; border-radius:8px; font-size:14px; line-height:1.6; }
+    .citation { display:block; margin-top:8px; color:#1d4ed8; background:#fff; border:1px solid #bfdbfe; padding:7px; border-radius:6px; text-align:left; }
+    .task { display:flex; gap:8px; align-items:flex-start; padding:9px 0; border-bottom:1px solid #dbeafe; }
+    .task:last-child { border-bottom:0; }
+    .status { color:var(--green); font-size:12px; margin-left:5px; }
+    .toast { position:fixed; right:24px; bottom:24px; padding:11px 15px; background:#172033; color:white; border-radius:8px; opacity:0; transform:translateY(8px); transition:.2s; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width: 1000px) { .editor-layout { grid-template-columns:180px 1fr; } .ai-panel { display:none; } .cards { grid-template-columns:1fr; } }
+    @media (max-width: 720px) { .app { grid-template-columns:1fr; } .sidebar { display:none; } .topbar input { width:150px; } .page { padding:18px; } .editor { padding:32px 22px; } .tree { display:none; } .editor-layout { display:block; height:auto; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">妙码工作区</div>
+      <div class="nav">
+        <button class="active" data-view="home">⌂ 首页</button>
+        <button data-view="tasks">✓ 我的任务</button>
+      </div>
+      <div class="space-title">项目空间</div>
+      <div class="nav">
+        <button data-view="editor">内容项目</button>
+        <button data-view="editor">研发交付</button>
+      </div>
+      <div class="space-title">管理</div>
+      <div class="nav"><button data-view="members">成员与权限</button></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb" id="crumb">首页</div>
+        <input placeholder="搜索文档…" aria-label="搜索文档" />
+        <button class="primary" id="newDoc">+ 新建</button>
+        <button>用户</button>
+      </header>
+      <section id="home" class="page view">
+        <h1>欢迎回来</h1>
+        <p class="muted">从最近文档继续，或者创建一次会议纪要。</p>
+        <div class="cards">
+          <div class="card"><h3>快速创建</h3><p class="muted">用模板开始一份可协作的文档。</p><button class="primary" data-open="editor">新建项目周报</button></div>
+          <div class="card"><h3>我的任务</h3><p><strong id="taskCount">2</strong> 个待处理任务</p><button data-open="tasks">查看任务</button></div>
+          <div class="card"><h3>本周 AI 使用</h3><p><strong>12</strong> 次已保存结果</p><span class="status">↑ 18% 较上周</span></div>
+        </div>
+        <h2>最近文档</h2>
+        <div class="doc-list">
+          <div class="doc-row" data-open="editor"><strong>项目周报</strong><span class="muted">内容项目</span><span class="muted">10 分钟前</span></div>
+          <div class="doc-row" data-open="editor"><strong>客户访谈纪要</strong><span class="muted">内容项目</span><span class="muted">昨天</span></div>
+          <div class="doc-row" data-open="editor"><strong>交付复盘</strong><span class="muted">研发交付</span><span class="muted">周一</span></div>
+        </div>
+      </section>
+      <section id="editor" class="view" hidden>
+        <div class="editor-layout">
+          <aside class="tree"><h3>内容项目</h3><div class="tree-item">项目概览</div><div class="tree-item active">项目周报</div><div class="tree-item">会议纪要</div><div class="tree-item">交付复盘</div><button id="addBlock">+ 新建文档</button></aside>
+          <article class="editor" contenteditable="true" aria-label="文档编辑器">
+            <h1>项目周报</h1>
+            <div class="block"><p>本周完成了客户访谈、方案初稿和一次内部评审。团队正在把会议结论整理成可执行任务。</p></div>
+            <h2>本周进展</h2>
+            <div class="block"><ul><li>完成访谈提纲和录音整理</li><li>形成方案初稿，等待客户确认</li><li>建立下一周的交付任务</li></ul></div>
+            <h2>风险与待确认</h2>
+            <div class="block"><p>客户需要在周三前确认数据字段。若延迟，方案评审会顺延。</p></div>
+          </article>
+          <aside class="ai-panel"><h3>AI 工作台</h3><p class="muted">当前上下文：项目周报</p><div class="ai-actions"><button data-ai="summary">生成摘要</button><button data-ai="tasks">提取任务</button><button data-ai="weekly">生成周报</button><button data-ai="ask">询问当前文档</button></div><div id="result" class="result" hidden></div></aside>
+        </div>
+      </section>
+      <section id="tasks" class="page view" hidden><h1>我的任务</h1><p class="muted">来自文档、会议纪要和 AI 结果的任务。</p><div class="card"><div class="task"><input type="checkbox" /><div><strong>确认客户数据字段</strong><div class="muted">项目周报 · 截止周三</div></div></div><div class="task"><input type="checkbox" /><div><strong>完成方案评审准备</strong><div class="muted">交付复盘 · 截止周五</div></div></div></div></section>
+      <section id="members" class="page view" hidden><h1>成员与权限</h1><p class="muted">管理工作区成员和空间访问。</p><div class="card"><p><strong>林晓</strong>　管理员</p><p><strong>陈默</strong>　成员</p><p><strong>周宁</strong>　访客</p><button class="primary" id="invite">邀请成员</button></div></section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script>
+    const views = [...document.querySelectorAll('.view')];
+    const crumb = document.querySelector('#crumb');
+    const toast = document.querySelector('#toast');
+    function showToast(message) { toast.textContent = message; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1800); }
+    function showView(name) { views.forEach((v) => { v.hidden = v.id !== name; }); crumb.textContent = name === 'home' ? '首页' : name === 'editor' ? '内容项目 / 项目周报' : name === 'tasks' ? '我的任务' : '成员与权限'; }
+    document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => showView(button.dataset.view)));
+    document.querySelectorAll('[data-open]').forEach((button) => button.addEventListener('click', () => showView(button.dataset.open)));
+    document.querySelector('#newDoc').addEventListener('click', () => { showView('editor'); showToast('已创建项目周报模板'); });
+    document.querySelector('#addBlock').addEventListener('click', () => showToast('已创建新文档'));
+    document.querySelector('#invite').addEventListener('click', () => showToast('邀请链接已复制'));
+    document.querySelectorAll('[data-ai]').forEach((button) => button.addEventListener('click', () => {
+      const result = document.querySelector('#result');
+      result.hidden = false;
+      const type = button.dataset.ai;
+      const copy = { summary:'本周完成访谈、方案初稿和内部评审，当前风险是客户数据字段确认可能延迟。', tasks:'识别到 2 个待确认任务，请逐条确认后创建。', weekly:'已根据当前文档生成周报草稿，可插入文档或继续编辑。', ask:'当前文档的主要风险是数据字段确认时间，来源位于“风险与待确认”段落。' };
+      result.innerHTML = '<strong>生成结果</strong><p>' + copy[type] + '</p><button class="citation">查看引用 · 项目周报 / 风险与待确认</button><div><button class="primary" onclick="window.showToast(\'已保存结果\')">采纳</button> <button onclick="window.showToast(\'已转成任务\')">转为任务</button></div>';
+      showToast('AI 已生成结果');
+    }));
+    window.showToast = showToast;
+  </script>
+</body>
+</html>

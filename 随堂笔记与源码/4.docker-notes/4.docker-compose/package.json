@@ -1,0 +1,5 @@
+{
+    "scripts": {
+        "docker:up": "docker compose -p miaoma-docker-demo up -d"
+    }
+}

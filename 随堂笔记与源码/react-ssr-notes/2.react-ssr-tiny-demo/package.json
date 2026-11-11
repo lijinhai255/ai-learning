@@ -1,0 +1,17 @@
+{
+  "name": "2.react-ssr-tiny-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "Heyi",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
+}

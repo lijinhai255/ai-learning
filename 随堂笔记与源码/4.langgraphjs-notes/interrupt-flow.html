@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LangGraph 流程讲解 · 中断与恢复 interrupt</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel-2: #1e222d;
+    --border: #2a2f3d;
+    --text: #e6e9f0;
+    --muted: #9aa4b8;
+    --accent: #6ea8fe;
+    --accent-2: #7ee0b8;
+    --warn: #ffcc66;
+    --danger: #ff8a8a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: .5px; }
+  h2 {
+    font-size: 20px; margin: 44px 0 16px; padding-left: 12px;
+    border-left: 4px solid var(--accent);
+  }
+  h3 { font-size: 16px; margin: 24px 0 8px; color: var(--accent-2); }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 4px; }
+  .file {
+    display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; color: var(--accent-2); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px;
+    margin-top: 10px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px; margin-top: 18px;
+  }
+  .diagram { overflow-x: auto; background: var(--panel-2); border-radius: 14px; border: 1px solid var(--border); padding: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 6px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; background: var(--panel-2); }
+  tr:last-child td { border-bottom: none; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+    background: #10131a; border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+    color: #cfe3ff;
+  }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .tag.g { color: var(--accent-2); border-color: #2e5b4a; }
+  .tag.w { color: var(--warn); border-color: #5b4a2e; }
+  .k { color: var(--accent); font-weight: 600; }
+  .g { color: var(--accent-2); font-weight: 600; }
+  .w { color: var(--warn); font-weight: 600; }
+  .d { color: var(--danger); font-weight: 600; }
+  ul { margin: 8px 0 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  .steps { counter-reset: s; list-style: none; padding-left: 0; }
+  .steps li { position: relative; padding-left: 40px; margin: 14px 0; }
+  .steps li::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; left: 0; top: 0;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #0b0e14; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .note { font-size: 13px; color: var(--muted); }
+  .warnbox {
+    border-left: 4px solid var(--warn); background: #1d1a14;
+    border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>中断与恢复（Human-in-the-loop）流程讲解</h1>
+  <div class="sub">LangGraph.js：用 <code>interrupt()</code> 在流程中间暂停，等用户输入后再用 <code>Command({ resume })</code> 从断点继续</div>
+  <div class="file">src/6.interrupt/agent.ts</div>
+
+  <h2>一、整体结构图</h2>
+  <p class="note">左边是图的<b>静态结构</b>（只有一条线），右边是它的<b>运行时序</b>——一次任务被拆成「两次 invoke」，中间夹着一次用户输入。</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1120 540" width="100%" height="540" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace, Menlo, monospace">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#64708a" />
+        </marker>
+        <marker id="arrowP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#a97ce0" />
+        </marker>
+        <linearGradient id="gF" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1e4d3c" /><stop offset="1" stop-color="#16362c" />
+        </linearGradient>
+        <linearGradient id="gI" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#5a3f14" /><stop offset="1" stop-color="#3d2b0e" />
+        </linearGradient>
+        <linearGradient id="gB" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#233a5e" /><stop offset="1" stop-color="#1b2a44" />
+        </linearGradient>
+      </defs>
+
+      <!-- 分区标题 -->
+      <text x="340" y="30" text-anchor="middle" fill="#9db8e0" font-size="15" font-weight="700">图结构 agent</text>
+      <text x="840" y="30" text-anchor="middle" fill="#c9a8ee" font-size="15" font-weight="700">运行时序（共两次 invoke）</text>
+      <line x1="560" y1="14" x2="560" y2="524" stroke="#2a2f3d" stroke-width="1" stroke-dasharray="6 6" />
+
+      <!-- ===== 图结构 ===== -->
+      <circle cx="340" cy="64" r="27" fill="#1c2433" stroke="#64708a" stroke-width="2" />
+      <text x="340" y="69" text-anchor="middle" fill="#cfe3ff" font-size="12">START</text>
+      <line x1="340" y1="91" x2="340" y2="108" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <rect x="225" y="110" width="230" height="64" rx="12" fill="url(#gF)" stroke="#4fca9d" stroke-width="2" />
+      <text x="340" y="137" text-anchor="middle" fill="#d6ffee" font-size="13" font-weight="700">fetchTool</text>
+      <text x="340" y="157" text-anchor="middle" fill="#8fd8bd" font-size="11">抓取 url → 写 text</text>
+      <line x1="340" y1="174" x2="340" y2="196" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <rect x="200" y="198" width="280" height="90" rx="12" fill="url(#gI)" stroke="#e0b34f" stroke-width="2" stroke-dasharray="6 4" />
+      <text x="340" y="226" text-anchor="middle" fill="#fff0cf" font-size="13" font-weight="700">✋ interrutNode</text>
+      <text x="340" y="246" text-anchor="middle" fill="#e0c88a" font-size="10.5">const approved = interrupt(「你满意吗？」)</text>
+      <text x="340" y="264" text-anchor="middle" fill="#e0c88a" font-size="10.5">return { approved }</text>
+      <text x="340" y="282" text-anchor="middle" fill="#ffcc66" font-size="10.5">← 在这里暂停，抛出中断</text>
+      <line x1="340" y1="288" x2="340" y2="310" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <rect x="225" y="312" width="230" height="64" rx="12" fill="url(#gB)" stroke="#5b8dee" stroke-width="2" />
+      <text x="340" y="339" text-anchor="middle" fill="#dce9ff" font-size="13" font-weight="700">modelNode</text>
+      <text x="340" y="359" text-anchor="middle" fill="#9db8e0" font-size="11">分析 state.text 的价值</text>
+      <line x1="340" y1="376" x2="340" y2="396" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <circle cx="340" cy="424" r="27" fill="#1c2433" stroke="#64708a" stroke-width="2" />
+      <text x="340" y="429" text-anchor="middle" fill="#cfe3ff" font-size="12">END</text>
+
+      <text x="148" y="228" text-anchor="middle" fill="#9aa4b8" font-size="11">检查点</text>
+      <text x="148" y="246" text-anchor="middle" fill="#9aa4b8" font-size="11">在此保存</text>
+
+      <path d="M 480 240 C 530 240, 545 116, 600 116" fill="none" stroke="#a97ce0" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowP)" />
+
+      <!-- ===== 时序卡片 ===== -->
+      <rect x="605" y="62" width="470" height="108" rx="12" fill="#1e222d" stroke="#5b8dee" stroke-width="2" />
+      <text x="625" y="88" fill="#8ab4ff" font-size="13" font-weight="700">① 第一次 invoke(config)</text>
+      <text x="625" y="112" fill="#c8d3e6" font-size="11.5">输入 { times:0, url } → 跑 fetchTool，</text>
+      <text x="625" y="132" fill="#c8d3e6" font-size="11.5">跑到 interrutNode 处暂停并返回</text>
+      <text x="625" y="152" fill="#7f8ba3" font-size="11">返回结果里带 __interrupt__，checkpointer 存下现场</text>
+
+      <line x1="840" y1="170" x2="840" y2="192" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <rect x="605" y="194" width="470" height="108" rx="12" fill="#1e222d" stroke="#e0b34f" stroke-width="2" stroke-dasharray="6 4" />
+      <text x="625" y="220" fill="#ffcc66" font-size="13" font-weight="700">② 终端等待用户输入</text>
+      <text x="625" y="244" fill="#c8d3e6" font-size="11.5">ask(「是否继续执行？」)</text>
+      <text x="625" y="266" fill="#7ee0b8" font-size="11.5">输入「是」 → 继续往下（走卡片 ③）</text>
+      <text x="625" y="286" fill="#ff8a8a" font-size="11.5">输入「否」 → 打印「已中断，流程结束」并 return</text>
+
+      <line x1="840" y1="302" x2="840" y2="324" stroke="#64708a" stroke-width="2" marker-end="url(#arrow)" />
+
+      <rect x="605" y="326" width="470" height="108" rx="12" fill="#1e222d" stroke="#4fca9d" stroke-width="2" />
+      <text x="625" y="352" fill="#7ee0b8" font-size="13" font-weight="700">③ 第二次 invoke(new Command({ resume: "是" }), config)</text>
+      <text x="625" y="376" fill="#c8d3e6" font-size="11.5">从检查点恢复 → interrupt() 返回 "是" →</text>
+      <text x="625" y="396" fill="#c8d3e6" font-size="11.5">写入 approved → 继续跑 modelNode → END</text>
+      <text x="625" y="416" fill="#7f8ba3" font-size="11">同一个 thread_id 才能对上同一份中断现场</text>
+
+      <!-- 断点标记 -->
+      <text x="840" y="462" text-anchor="middle" fill="#9aa4b8" font-size="11">↺ 关键：整个任务跨两次 invoke，靠 checkpointer + thread_id 衔接</text>
+      <text x="840" y="486" text-anchor="middle" fill="#ff8a8a" font-size="11">⚠ 若中途「否」，图会永久停在中断点，不再恢复</text>
+    </svg>
+  </div>
+
+  <h2>二、执行时序讲解</h2>
+  <ol class="steps">
+    <li>
+      <span class="k">第一次 invoke</span>：<code>agent.invoke({ times: 0, url }, config)</code>。
+      带上了 <code>config</code>（<code>thread_id: "thread-1"</code>），所以这一次的运行现场会被 <code>MemorySaver</code> 存成检查点。
+    </li>
+    <li>
+      <span class="k">跑到中断点</span>：先执行 <code>fetchTool</code> 抓取网页、写 <code>text</code>；
+      进入 <code>interrutNode</code> 后遇到 <code>interrupt("你满意吗？")</code>，图<b>立即暂停</b>并把该问题抛给调用方，
+      这次 <code>invoke</code> 就此返回（返回值里带 <code>__interrupt__</code>）。
+    </li>
+    <li>
+      <span class="w">终端等待用户输入</span>：这次不写死在代码里，而是用 <code>ask()</code> 阻塞等用户敲键盘。
+      <ul>
+        <li>输入 <span class="g">「是」</span> → 继续第 4 步；</li>
+        <li>输入其它（如 <span class="d">「否」</span>）→ 打印「已中断，流程结束。」直接 <code>return</code>，图不再继续。</li>
+      </ul>
+    </li>
+    <li>
+      <span class="k">第二次 invoke 恢复</span>：<code>agent.invoke(new Command({ resume: answer }), config)</code>。
+      <code>Command({ resume })</code> 告诉图「从断点继续，并把 resume 值当作 <code>interrupt()</code> 的返回值」。
+    </li>
+    <li>
+      <span class="k">续跑到结束</span>：<code>interrupt()</code> 返回 <code>"是"</code> → 节点 <code>return { approved: "是" }</code> →
+      边继续到 <code>modelNode</code> → <code>END</code>，第二次 <code>invoke</code> 返回最终状态。
+    </li>
+  </ol>
+
+  <div class="warnbox">
+    <b>为什么必须传 <code>config</code> + <code>checkpointer</code>：</b><br />
+    中断的本质是「把图的状态冻结存盘、之后原样解冻」。没有 <code>MemorySaver</code> 就没有检查点可存；
+    两次 <code>invoke</code> 必须用<b>同一个 <code>thread_id</code></b>，否则第二次会被当成一次全新运行，而不是恢复。
+  </div>
+
+  <h2>三、节点表</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>节点</th><th>类型</th><th>职责</th><th>读 / 写状态</th></tr></thead>
+      <tbody>
+        <tr><td><code>fetchTool</code></td><td><span class="tag g">工具节点</span></td><td>抓取 url 的网页正文</td><td>读 <code>url</code> → 写 <code>text</code>、<code>times</code></td></tr>
+        <tr><td><code>interrutNode</code></td><td><span class="tag w">中断节点</span></td><td>抛 <code>interrupt()</code> 暂停，等用户确认</td><td>写 <code>approved</code>（来自 resume 值）</td></tr>
+        <tr><td><code>modelNode</code></td><td><span class="tag">LLM 节点</span></td><td>分析 <code>state.text</code> 的价值</td><td>读 <code>text</code> → 不变更</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>四、边表</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>起点</th><th>终点</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>__start__</code></td><td><code>fetchTool</code></td><td>入口，先抓内容</td></tr>
+        <tr><td><code>fetchTool</code></td><td><code>interrutNode</code></td><td>抓完 → 问用户「满意吗？」</td></tr>
+        <tr><td><code>interrutNode</code></td><td><code>modelNode</code></td><td>用户确认后 → 交给模型分析</td></tr>
+        <tr><td><code>modelNode</code></td><td><code>__end__</code></td><td>结束</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>五、状态字段表</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>字段</th><th>类型</th><th>谁写的</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>url</code></td><td><code>string</code></td><td>调用方初始传入</td><td>要抓取的目标地址</td></tr>
+        <tr><td><code>times</code></td><td><code>number</code></td><td><code>fetchTool</code> 节点 +1</td><td>计数 / 循环控制位</td></tr>
+        <tr><td><code>text</code></td><td><code>string</code></td><td><code>fetchTool</code> 节点</td><td>抓到的网页正文</td></tr>
+        <tr><td><code>approved</code></td><td><code>string</code></td><td><code>interrutNode</code> 节点</td><td>用户在中断处的回答（"是"），来自 resume 值</td></tr>
+      </tbody>
+    </table>
+    <p class="note">注意：<code>approved</code> 是本轮新增的字段。节点里 <code>return { approved }</code>，若状态 schema 中没有该字段，写回会失败——所以它必须声明在 <code>StateAnnotation</code> 里。</p>
+  </div>
+
+  <h2>六、要点补充</h2>
+  <div class="card">
+    <ul>
+      <li><span class="k">interrupt() 是"值"而不是"控制流"：</span>它像函数一样返回，但第一次执行时<b>不会真正返回</b>——而是抛出中断、保存现场；只有 resume 之后，它才带着 resume 值"回过头来"继续执行。</li>
+      <li><span class="g">resume 值的类型就是你传进去的东西：</span>这里传 <code>answer</code>（字符串）→ <code>interrupt()</code> 返回字符串；若传 <code>true</code>，返回的就是 <code>boolean</code>。</li>
+      <li><span class="w">暂停点在节点内部：</span>恢复时，整个 <code>interrutNode</code> 会<b>从头重新执行</b>，但 <code>interrupt()</code> 这一行会直接拿到 resume 值，所以中断之前的副作用需要自己保证幂等。</li>
+      <li><span class="k">store vs checkpointer：</span><code>store</code>（InMemoryStore）是跨线程的长期记忆；<code>checkpointer</code>（MemorySaver）是单个线程的运行检查点。中断恢复靠的是后者。</li>
+      <li><span class="d">命名小提醒：</span>节点名拼写为 <code>interrutNode</code>（少了一个 p），虽然不影响运行，但容易与变量名混淆，可留意统一。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

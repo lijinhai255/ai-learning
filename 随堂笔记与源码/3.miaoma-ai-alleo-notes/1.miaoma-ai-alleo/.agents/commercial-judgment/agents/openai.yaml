@@ -1,0 +1,4 @@
+interface:
+  display_name: "商业研判"
+  short_description: "多源证据驱动的商业市场与产品决策研究、竞品对比和虚拟验证"
+  default_prompt: "Use $commercial-judgment to complete a Chinese commercial market and product decision study with sources, competitor analysis, and validation hypotheses."

@@ -1,0 +1,1 @@
+"/Applications/wechatwebdevtools.app/Contents/MacOS/cli" cloud functions deploy --e prod-3glxqe7m9a727958 --n quickstartFunctions --r --project "/Users/lipeizhong/Downloads/mini-app-notes/2.serverless" --report_first --report

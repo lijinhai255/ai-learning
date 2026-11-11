@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>LangGraph 工作流结构图 · AI 客服意图分流</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 24px 64px;
+    background: #eef1f5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    color: #1f2933;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .src { font-size: 12.5px; color: #64748b; margin-bottom: 24px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, .05);
+  }
+  .card + .card { margin-top: 20px; }
+  .diagram { display: flex; justify-content: center; }
+  svg { max-width: 100%; height: auto; }
+  h2 { font-size: 15px; margin: 0 0 14px; color: #0f172a; }
+  .legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 12.5px; color: #475569; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; display: inline-block; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+  th { color: #64748b; font-weight: 600; background: #f8fafc; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    background: #f1f5f9;
+    padding: 1.5px 5px;
+    border-radius: 4px;
+    color: #0f172a;
+  }
+  .tag { font-size: 11px; padding: 1.5px 7px; border-radius: 20px; white-space: nowrap; }
+  .t-node { background: #e3f2fd; color: #1565c0; }
+  .t-cond { background: #fff3e0; color: #b26a00; }
+  .t-end  { background: #eceff1; color: #546e7a; }
+  ul { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.85; color: #334155; }
+  .flowline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: #334155; line-height: 2; }
+  .flowline b { color: #1565c0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 客服：意图识别 → 分流到三个客服节点</h1>
+  <div class="src">langgraph-demo/src/2.graph-flow/agent2.ts · StateGraph(StateAnnotation)</div>
+
+  <div class="card">
+    <div class="legend">
+      <span><i class="sw" style="background:#e8f5e9;border-color:#43a047"></i>开始 / 结束</span>
+      <span><i class="sw" style="background:#fff;border-color:#90a4ae"></i>普通节点（处理逻辑）</span>
+      <span><i class="sw" style="background:#fff8e1;border-color:#f0a500;transform:rotate(45deg)"></i>条件边（意图分流）</span>
+      <span><i class="sw" style="background:#e3f2fd;border-color:#1976d2"></i>模型调用（llm.invoke）</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="diagram">
+      <svg viewBox="0 0 900 700" width="900" role="img" aria-label="AI 客服意图分流流程图">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#607d8b" />
+          </marker>
+          <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#1976d2" />
+          </marker>
+        </defs>
+
+        <!-- 入口 -->
+        <text x="560" y="34" font-size="12" fill="#64748b">invoke({ question: "我买的耳机今天能发货吗？" })</text>
+        <rect x="380" y="16" width="140" height="44" rx="22" fill="#e8f5e9" stroke="#43a047" stroke-width="1.6" />
+        <text x="450" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#2e7d32">START</text>
+
+        <!-- START -> recognizeIntent -->
+        <line x1="450" y1="60" x2="450" y2="106" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <!-- recognizeIntent -->
+        <rect x="320" y="110" width="260" height="68" rx="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.6" />
+        <text x="450" y="140" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0d47a1">recognizeIntent</text>
+        <text x="450" y="160" text-anchor="middle" font-size="11.5" fill="#3f6ea5">llm 判断意图 → { intent }</text>
+
+        <!-- recognizeIntent -> 条件边 -->
+        <line x1="450" y1="178" x2="450" y2="196" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <!-- 条件边 routeByIntent -->
+        <polygon points="450,200 570,260 450,320 330,260" fill="#fff8e1" stroke="#f0a500" stroke-width="1.6" />
+        <text x="450" y="255" text-anchor="middle" font-size="13.5" font-weight="700" fill="#8d6e00">routeByIntent</text>
+        <text x="450" y="274" text-anchor="middle" font-size="11" fill="#a1887f">条件边：return state.intent</text>
+
+        <!-- 三条分流线 -->
+        <path d="M 330 260 H 170 V 356" fill="none" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+        <line x1="450" y1="320" x2="450" y2="356" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+        <path d="M 570 260 H 730 V 356" fill="none" stroke="#607d8b" stroke-width="1.6" marker-end="url(#arrow)" />
+
+        <rect x="209" y="238" width="76" height="19" rx="5" fill="#ffffff" />
+        <text x="247" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#2e7d32">售前问题</text>
+        <rect x="404" y="333" width="92" height="19" rx="5" fill="#ffffff" />
+        <text x="450" y="347" text-anchor="middle" font-size="12" font-weight="700" fill="#b26a00">产品咨询问题</text>
+        <rect x="615" y="238" width="76" height="19" rx="5" fill="#ffffff" />
+        <text x="653" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#c62828">售后问题</text>
+
+        <!-- 三个客服节点 -->
+        <rect x="45" y="360" width="250" height="76" rx="10" fill="#ffffff" stroke="#90a4ae" stroke-width="1.6" />
+        <text x="170" y="392" text-anchor="middle" font-size="14.5" font-weight="700" fill="#263238">preSales</text>
+        <text x="170" y="413" text-anchor="middle" font-size="11.5" fill="#78909c">售前：价格 · 优惠 · 下单</text>
+
+        <rect x="325" y="360" width="250" height="76" rx="10" fill="#ffffff" stroke="#90a4ae" stroke-width="1.6" />
+        <text x="450" y="392" text-anchor="middle" font-size="14.5" font-weight="700" fill="#263238">productInquiry</text>
+        <text x="450" y="413" text-anchor="middle" font-size="11.5" fill="#78909c">咨询：参数 · 功能 · 用法</text>
+
+        <rect x="605" y="360" width="250" height="76" rx="10" fill="#ffffff" stroke="#90a4ae" stroke-width="1.6" />
+        <text x="730" y="392" text-anchor="middle" font-size="14.5" font-weight="700" fill="#263238">afterSales</text>
+        <text x="730" y="413" text-anchor="middle" font-size="11.5" fill="#78909c">售后：退换货 · 物流 · 维修</text>
+
+        <!-- 汇合到 END -->
+        <path d="M 170 436 V 530 H 450" fill="none" stroke="#1976d2" stroke-width="1.6" />
+        <path d="M 730 436 V 530 H 450" fill="none" stroke="#1976d2" stroke-width="1.6" />
+        <line x1="450" y1="436" x2="450" y2="586" stroke="#1976d2" stroke-width="1.6" marker-end="url(#arrowBlue)" />
+
+        <text x="450" y="500" text-anchor="middle" font-size="11.5" fill="#1976d2">每个分支都 return { answer }，写回同一个状态字段</text>
+
+        <!-- END -->
+        <rect x="390" y="590" width="120" height="44" rx="22" fill="#eceff1" stroke="#607d8b" stroke-width="1.6" />
+        <text x="450" y="618" text-anchor="middle" font-size="14" font-weight="700" fill="#455a64">END</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>调用流程（一次 invoke 走完的路）</h2>
+    <div class="flowline">
+      ① <code>invoke({ question })</code> →
+      <b>START</b> →
+      ② <code>recognizeIntent</code>：提示词让模型只回一个意图词，写入 <code>intent</code> →
+      ③ <code>routeByIntent</code>：读 <code>state.intent</code> 决定走哪条分支 →
+      ④ 三个客服节点里<b>只跑其中一个</b>：<code>preSales</code> / <code>afterSales</code> / <code>productInquiry</code>，写入 <code>answer</code> →
+      ⑤ <b>END</b>，返回最终 state
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>节点（做什么）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:170px">节点名</th><th style="width:120px">类型</th><th>作用 / 状态读写</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>recognizeIntent</code></td>
+          <td><span class="tag t-node">节点</span></td>
+          <td>意图识别，调模型分类，返回 <code>{ intent }</code>（读 <code>question</code>，写 <code>intent</code>）</td>
+        </tr>
+        <tr>
+          <td><code>routeByIntent</code></td>
+          <td><span class="tag t-cond">条件边</span></td>
+          <td>不调模型，直接 <code>return state.intent</code>，由映射表决定下一个节点</td>
+        </tr>
+        <tr>
+          <td><code>preSales</code></td>
+          <td><span class="tag t-node">节点</span></td>
+          <td>售前客服人设：价格、优惠活动、下单流程，返回 <code>{ answer }</code></td>
+        </tr>
+        <tr>
+          <td><code>afterSales</code></td>
+          <td><span class="tag t-node">节点</span></td>
+          <td>售后客服人设：退换货、物流查询、维修申请，返回 <code>{ answer }</code></td>
+        </tr>
+        <tr>
+          <td><code>productInquiry</code></td>
+          <td><span class="tag t-node">节点</span></td>
+          <td>产品咨询人设：商品参数、功能、使用方法，返回 <code>{ answer }</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>边（怎么流转）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:320px">从 → 到</th><th style="width:110px">类型</th><th>触发条件</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>__start__ → recognizeIntent</code></td><td><span class="tag t-cond">普通边</span></td><td>图启动即进入意图识别</td></tr>
+        <tr><td><code>recognizeIntent → routeByIntent</code></td><td><span class="tag t-cond">条件边</span></td><td>识别完立刻按 <code>intent</code> 分流</td></tr>
+        <tr><td><code>routeByIntent → preSales</code></td><td><span class="tag t-cond">条件分支</span></td><td>意图 = <code>售前问题</code></td></tr>
+        <tr><td><code>routeByIntent → afterSales</code></td><td><span class="tag t-cond">条件分支</span></td><td>意图 = <code>售后问题</code></td></tr>
+        <tr><td><code>routeByIntent → productInquiry</code></td><td><span class="tag t-cond">条件分支</span></td><td>意图 = <code>产品咨询问题</code></td></tr>
+        <tr><td><code>preSales / afterSales / productInquiry → __end__</code></td><td><span class="tag t-end">普通边 ×3</span></td><td>三个节点都直连终止，回答完就结束</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>状态字段（StateAnnotation）</h2>
+    <table>
+      <thead>
+        <tr><th style="width:170px">字段</th><th style="width:170px">类型</th><th>谁来写入</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>question</code></td><td><code>string</code></td><td>外部 <code>invoke()</code> 传入（图入口参数）</td></tr>
+        <tr><td><code>intent</code></td><td><code>Intent</code></td><td><code>recognizeIntent</code>，取值只能是三个意图之一</td></tr>
+        <tr><td><code>answer</code></td><td><code>string</code></td><td>三个客服节点里跑到的那个</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>两点补充说明</h2>
+    <ul>
+      <li><b>意图识别的兜底：</b>没有用 structured output，而是靠提示词 + <code>INTENTS.find(item =&gt; text.includes(item))</code> 做关键词匹配；模型哪怕多说了几个字也能命中，全都没命中时落到默认的「产品咨询问题」，保证 <code>routeByIntent</code> 一定拿得到合法分支。</li>
+      <li><b>分支互斥：</b>条件边只命中一条，所以一次调用只会执行一个客服节点；三个节点写的是同一个 <code>answer</code> 字段，所以三条边都直连 <code>__end__</code> 就够了，不需要再合并。</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

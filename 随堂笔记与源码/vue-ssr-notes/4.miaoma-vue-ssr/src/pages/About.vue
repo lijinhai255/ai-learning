@@ -1,0 +1,1 @@
+<template>Detail Page</template>

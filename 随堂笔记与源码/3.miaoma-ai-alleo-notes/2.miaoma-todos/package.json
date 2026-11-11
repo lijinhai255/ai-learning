@@ -1,0 +1,22 @@
+{
+  "name": "miaoma-todo",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.5",
+  "scripts": {
+    "dev:web": "pnpm --filter @miaoma/web dev",
+    "build:web": "pnpm --filter @miaoma/web build",
+    "typecheck": "pnpm --recursive --if-present typecheck",
+    "lint": "pnpm --recursive --if-present lint",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "test": "pnpm test:unit && pnpm test:e2e",
+    "docker:dev": "docker compose -f Docker/compose/docker-compose.dev.yml up --build",
+    "docker:down": "docker compose -f Docker/compose/docker-compose.dev.yml down",
+    "docker:config": "docker compose -f Docker/compose/docker-compose.dev.yml config"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "vitest": "^2.1.8"
+  }
+}

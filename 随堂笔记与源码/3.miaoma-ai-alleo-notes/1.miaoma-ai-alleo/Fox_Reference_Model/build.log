@@ -1,0 +1,30 @@
+/Users/heyi/Downloads/miaoma-ai-alleo-notes/1.miaoma-ai-alleo/Fox_Reference_Model/build_fox.py:30: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+GROOM Fox | continuous body and head sculpt 99411
+GROOM Fore L | charcoal stocking 2600
+GROOM Fore R | charcoal stocking 2600
+GROOM Hind L | charcoal stocking 2600
+GROOM Hind R | charcoal stocking 2600
+GROOM Cream | throat bib 3600
+GROOM Cream | chest bib 3600
+GROOM Cream | lower jaw 2400
+GROOM Cream | whisker pad -1 2400
+GROOM Cream | cheek ruff -1 2400
+GROOM Cream | whisker pad 1 2400
+GROOM Cream | cheek ruff 1 2400
+GROOM Tail | curved brush with white tip 21000
+GROOM Ear | dark rim -1 1500
+GROOM Ear | dark rim 1 1500
+GROOM Ear | inner velvet -1 1100
+GROOM Ear | inner velvet 1 1100
+/Users/heyi/Downloads/miaoma-ai-alleo-notes/1.miaoma-ai-alleo/Fox_Reference_Model/build_fox.py:411: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  world.use_nodes = True
+Info: Saved as "Red_Fox.blend"
+SAVED /Users/heyi/Downloads/miaoma-ai-alleo-notes/1.miaoma-ai-alleo/Fox_Reference_Model/Red_Fox.blend
+00:19.317  render           | Saved: '/Users/heyi/Downloads/miaoma-ai-alleo-notes/1.miaoma-ai-alleo/Fox_Reference_Model/Red_Fox_Render.png'
+RENDER_COMPLETE /Users/heyi/Downloads/miaoma-ai-alleo-notes/1.miaoma-ai-alleo/Fox_Reference_Model/Red_Fox_Render.png
+00:32.774  render           | Saved: '/Users/heyi/Downloads/miaoma-ai-alleo-notes/1.miaoma-ai-alleo/Fox_Reference_Model/Red_Fox_Front.png'
+FRONT_COMPLETE /Users/heyi/Downloads/miaoma-ai-alleo-notes/1.miaoma-ai-alleo/Fox_Reference_Model/Red_Fox_Front.png
+Blender 5.2.0 LTS (hash fbe6228777e7 built 2026-07-14 01:31:22)
+
+Blender quit

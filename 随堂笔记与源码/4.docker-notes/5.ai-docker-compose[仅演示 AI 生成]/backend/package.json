@@ -1,0 +1,16 @@
+{
+  "name": "ai-docker-compose-backend",
+  "version": "1.0.0",
+  "description": "Node.js + Express backend with PostgreSQL and Redis",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ioredis": "^5.4.1",
+    "pg": "^8.13.0"
+  }
+}

@@ -1,0 +1,16 @@
+<view>
+<button bind:tap="toLogs">to logs</button>
+  <text class="txt">
+  {{ message }}
+  </text>
+  <image  src="https://s3-imfile.feishucdn.com/static-resource/v1/v2_ab77980e-71ee-4b60-a3d1-a99f1071259g~?image_size=noop&cut_type=&quality=&format=image&sticker_format=.webp" />
+  <button>123</button>
+  <input  />
+
+
+  <!-- <view wx:for="topic in topics"> -->
+  <view wx:for="{{topics}}" wx:key="id" wx:for-item="topic">
+    <text class="item">{{topic.title}}</text>
+  </view>
+  <!-- {{topics[0].id}} -->
+</view>

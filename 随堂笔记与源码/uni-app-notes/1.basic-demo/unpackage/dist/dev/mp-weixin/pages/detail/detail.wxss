@@ -1,0 +1,9 @@
+
+.todo-container {
+  padding: 20px;
+}
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}

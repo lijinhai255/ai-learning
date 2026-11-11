@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caddy + Docker Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      padding: 40px 56px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-width: 560px;
+    }
+    h1 { font-size: 32px; margin-bottom: 16px; }
+    p  { font-size: 16px; line-height: 1.6; opacity: 0.92; }
+    code {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>我是合一！！！Hello from Caddy</h1>
+    <p>这个页面来自宿主机的 <code>./site/index.html</code>，通过 Docker Volume 映射到容器的 <code>/srv</code> 目录。</p>
+    <p style="margin-top: 12px;">修改本地 HTML 后刷新浏览器即可看到效果，重启容器也不会丢失。</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+
+> @ts-project/tui@0.1.0 build /Users/heyi/Downloads/typescript-fullstack-basic-notes/2.ts-project/apps/tui
+> tsdown
+
+[34mℹ[39m [34mtsdown v0.23.0[39m powered by [33mrolldown v1.2.9[39m
+[34mℹ[39m config file: [4m/Users/heyi/Downloads/typescript-fullstack-basic-notes/2.ts-project/apps/tui/tsdown.config.ts[24m 
+[34mℹ[39m entry: [34msrc/index.ts[39m
+[34mℹ[39m target: [34mnode20.0.0[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m Build start
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[1mindex.cjs[22m  [2m0.18 kB[22m [2m│ gzip: 0.17 kB[22m
+[34mℹ[39m [33m[CJS][39m 1 files, total: 0.18 kB
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[32m[1mindex.d.cts[22m[39m  [2m0.14 kB[22m [2m│ gzip: 0.12 kB[22m
+[34mℹ[39m [33m[CJS][39m 1 files, total: 0.14 kB
+[32m✔[39m Build complete in [32m373ms[39m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[1mindex.mjs[22m    [2m0.11 kB[22m [2m│ gzip: 0.11 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[32m[1mindex.d.mts[22m[39m  [2m0.14 kB[22m [2m│ gzip: 0.12 kB[22m
+[34mℹ[39m [34m[ESM][39m 2 files, total: 0.24 kB
+[32m✔[39m Build complete in [32m374ms[39m
