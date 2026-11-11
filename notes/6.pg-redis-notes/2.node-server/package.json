@@ -1,0 +1,22 @@
+{
+  "name": "2.node-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "Heyi",
+  "license": "ISC",
+  "dependencies": {
+    "pg": "8.23.1",
+    "redis": "6.3.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "@types/node": "22.20.5",
+    "typescript": "6.0.3"
+  }
+}

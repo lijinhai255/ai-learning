@@ -1,0 +1,27 @@
+version: "1.0"
+
+services:
+# pg
+  miaoma-pg:
+    container_name: miaoma-pg
+    image: postgres:18
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=heyi
+      - POSTGRES_PASSWORD=xiao123
+      - POSTGRES_DB=postgres
+    # 卷宗同步
+    volumes:
+      - ./postgresql_data:/var/lib/postgresql
+
+# redis
+  miaoma-redis:
+    container_name: miaoma-redis
+    image: redis:8.4
+    ports:
+      - 6379:6379
+    command: ["redis-server", "--requirepass", "heyiredis"]
+    # volumes:
+    #   - ./redis_data:/var/lib/redis
+    
